@@ -10,19 +10,23 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { usePreferences } from "../../contexts/PreferencesContext";
 
 type Type = "grip" | "pinch";
 type Side = "left" | "right";
 type Step = "type" | "side" | "live" | "result";
 
-function playSuccessFeedback() {
+function playSuccessFeedback(soundOn: boolean, vibrationOn: boolean) {
   // Vibração (via Capacitor)
-  try {
-    Haptics.impact({ style: ImpactStyle.Heavy });
-  } catch (e) {}
+  if (vibrationOn) {
+    try {
+      Haptics.impact({ style: ImpactStyle.Heavy });
+    } catch (e) {}
+  }
 
   // Som "Plim" (via Web Audio API)
-  try {
+  if (soundOn) {
+    try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
@@ -44,12 +48,14 @@ function playSuccessFeedback() {
     osc.start();
     osc.stop(ctx.currentTime + 0.5);
   } catch (e) {}
+  }
 }
 
 export function MeasurementScreen({ onBack }: { onBack: () => void }) {
+  const { sound, vibration } = usePreferences();
   const [step, setStep] = useState<Step>("type");
-  const [type, setType] = useState<Type>("grip");
-  const [side, setSide] = useState<Side>("right");
+  const [type, setType] = useState<Type | null>(null);
+  const [side, setSide] = useState<Side | null>(null);
   const [reading, setReading] = useState(0);
   const [peak, setPeak] = useState(0);
   const [running, setRunning] = useState(false);
@@ -82,7 +88,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
-  }, [running]);
+  }, [running, type, max, target]);
 
   function startRun() {
     setReading(0);
@@ -95,11 +101,13 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     setRunning(false);
     if (intervalRef.current) window.clearInterval(intervalRef.current);
     setStep("result");
-    playSuccessFeedback();
+    playSuccessFeedback(sound, vibration);
   }
 
   function reset() {
     setStep("type");
+    setType(null);
+    setSide(null);
     setReading(0);
     setPeak(0);
     setSecondsLeft(5);
@@ -132,7 +140,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             type={type}
             onSelect={(t) => {
               setType(t);
-              setStep("side");
+              setTimeout(() => setStep("side"), 350);
             }}
           />
         )}
@@ -142,12 +150,14 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             side={side}
             onSelect={(s) => {
               setSide(s);
-              setStep("live");
-              setTimeout(startRun, 400);
+              setTimeout(() => {
+                setStep("live");
+                setTimeout(startRun, 400);
+              }, 350);
             }}
           />
         )}
-        {step === "live" && (
+        {step === "live" && type && side && (
           <LiveStep
             type={type}
             side={side}
@@ -160,7 +170,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             onStart={startRun}
           />
         )}
-        {step === "result" && (
+        {step === "result" && type && side && (
           <ResultStep
             type={type}
             side={side}
@@ -197,7 +207,7 @@ function TypeStep({
   type,
   onSelect,
 }: {
-  type: Type;
+  type: Type | null;
   onSelect: (t: Type) => void;
 }) {
   const opts: { key: Type; label: string; sub: string; Icon: typeof Hand }[] = [
@@ -253,8 +263,8 @@ function SideStep({
   side,
   onSelect,
 }: {
-  type: Type;
-  side: Side;
+  type: Type | null;
+  side: Side | null;
   onSelect: (s: Side) => void;
 }) {
   const opts: { key: Side; label: string }[] = [

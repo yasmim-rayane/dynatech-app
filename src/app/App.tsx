@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useReminders } from "./hooks/useReminders";
-import { BottomNav, Tab } from "./components/BottomNav";
-import { ThemeProvider, useTheme } from "./components/ThemeContext";
+import { BottomNav, Tab } from "./components/common/BottomNav";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { LoginScreen } from "./components/screens/LoginScreen";
 import { SignupScreen } from "./components/screens/SignupScreen";
 import { ForgotScreen } from "./components/screens/ForgotScreen";
@@ -148,7 +149,9 @@ function Shell() {
 export default function App() {
   return (
     <ThemeProvider>
-      <Shell />
+      <PreferencesProvider>
+        <Shell />
+      </PreferencesProvider>
     </ThemeProvider>
   );
 }

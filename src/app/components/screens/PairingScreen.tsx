@@ -1,15 +1,19 @@
 import { Bluetooth, Check, ChevronLeft } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { usePreferences } from "../../contexts/PreferencesContext";
 
-function playPairingFeedback() {
+function playPairingFeedback(soundOn: boolean, vibrationOn: boolean) {
   // Vibração dupla (via Capacitor)
-  try {
-    Haptics.impact({ style: ImpactStyle.Medium });
-    setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }), 150);
-  } catch (e) {}
+  if (vibrationOn) {
+    try {
+      Haptics.impact({ style: ImpactStyle.Medium });
+      setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }), 150);
+    } catch (e) {}
+  }
 
   // Som duplo "Plim Plim" ascendente (via Web Audio API)
-  try {
+  if (soundOn) {
+    try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
@@ -37,6 +41,7 @@ function playPairingFeedback() {
     osc.start();
     osc.stop(ctx.currentTime + 0.4);
   } catch (e) {}
+  }
 }
 
 export function PairingScreen({
@@ -46,13 +51,14 @@ export function PairingScreen({
   onConnect: () => void;
   onBack?: () => void;
 }) {
+  const { sound, vibration } = usePreferences();
   const devices = [
     { name: "Dyna Tech Grip", id: "DT-A21F", strength: "Forte" },
     { name: "Dyna Tech Grip", id: "DT-7C13", strength: "Médio" },
   ];
 
   function handleConnect() {
-    playPairingFeedback();
+    playPairingFeedback(sound, vibration);
     onConnect();
   }
 

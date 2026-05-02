@@ -11,8 +11,12 @@ import {
   Info,
   Moon,
   Bluetooth,
+  Bell,
 } from "lucide-react";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { usePreferences } from "../../contexts/PreferencesContext";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { BleClient } from "@capacitor-community/bluetooth-le";
 
 export function GeneralSettingsScreen({
   onBack,
@@ -23,15 +27,54 @@ export function GeneralSettingsScreen({
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
-  const [sound, setSound] = useState(true);
-  const [vibration, setVibration] = useState(true);
+  const { sound, vibration, setSound, setVibration } = usePreferences();
   const [autoSync, setAutoSync] = useState(true);
   const [cacheSize, setCacheSize] = useState<string>("Calculando...");
   const [isClearing, setIsClearing] = useState(false);
 
+  const [notifPerm, setNotifPerm] = useState("Verificando...");
+  const [btPerm, setBtPerm] = useState("Verificando...");
+
   useEffect(() => {
     calculateCache();
+    checkPerms();
   }, []);
+
+  async function checkPerms() {
+    // Verifica Notificações
+    try {
+      const { display } = await LocalNotifications.checkPermissions();
+      setNotifPerm(display === "granted" ? "Permitido" : "Negado");
+    } catch (e) {
+      setNotifPerm("Indisponível");
+    }
+
+    // Verifica Bluetooth
+    try {
+      await BleClient.initialize();
+      const isEnabled = await BleClient.isEnabled();
+      setBtPerm(isEnabled ? "Ligado / Permitido" : "Desligado");
+    } catch (e) {
+      setBtPerm("Negado ou Sem Suporte");
+    }
+  }
+
+  async function handleRequestNotif() {
+    try {
+      const { display } = await LocalNotifications.requestPermissions();
+      setNotifPerm(display === "granted" ? "Permitido" : "Negado");
+    } catch {}
+  }
+
+  async function handleRequestBt() {
+    try {
+      await BleClient.initialize();
+      const isEnabled = await BleClient.isEnabled();
+      setBtPerm(isEnabled ? "Ligado / Permitido" : "Desligado");
+    } catch {
+      setBtPerm("Negado ou Sem Suporte");
+    }
+  }
 
   async function calculateCache() {
     let totalBytes = 0;
@@ -157,6 +200,21 @@ export function GeneralSettingsScreen({
             value={cacheSize} 
             danger 
             onClick={handleClearCache}
+          />
+        </Group>
+
+        <Group title="Permissões" delay={0.22}>
+          <NavRow
+            Icon={Bluetooth}
+            label="Bluetooth"
+            value={btPerm}
+            onClick={handleRequestBt}
+          />
+          <NavRow
+            Icon={Bell}
+            label="Notificações"
+            value={notifPerm}
+            onClick={handleRequestNotif}
           />
         </Group>
 

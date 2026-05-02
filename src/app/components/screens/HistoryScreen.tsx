@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { useTheme } from "../ThemeContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const dataMap: Record<string, { name: string; v: number }[]> = {
   "15": [

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Logo } from "../Logo";
+import { Logo } from "../common/Logo";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 export function LoginScreen({
