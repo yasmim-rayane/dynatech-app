@@ -1,4 +1,43 @@
 import { Bluetooth, Check, ChevronLeft } from "lucide-react";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+
+function playPairingFeedback() {
+  // Vibração dupla (via Capacitor)
+  try {
+    Haptics.impact({ style: ImpactStyle.Medium });
+    setTimeout(() => Haptics.impact({ style: ImpactStyle.Light }), 150);
+  } catch (e) {}
+
+  // Som duplo "Plim Plim" ascendente (via Web Audio API)
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = "sine";
+    
+    // Nota Mi(5) para Si(5)
+    osc.frequency.setValueAtTime(659.25, ctx.currentTime); 
+    osc.frequency.setValueAtTime(987.77, ctx.currentTime + 0.15);
+
+    // Envelope de volume
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.05);
+    gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0, ctx.currentTime + 0.15);
+    gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.2);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) {}
+}
 
 export function PairingScreen({
   onConnect,
@@ -11,6 +50,12 @@ export function PairingScreen({
     { name: "Dyna Tech Grip", id: "DT-A21F", strength: "Forte" },
     { name: "Dyna Tech Grip", id: "DT-7C13", strength: "Médio" },
   ];
+
+  function handleConnect() {
+    playPairingFeedback();
+    onConnect();
+  }
+
   return (
     <div
       className="h-full w-full flex flex-col px-6 pt-6 animate-fadeSlideUp"
@@ -101,7 +146,7 @@ export function PairingScreen({
               </div>
             </div>
             <button
-              onClick={onConnect}
+              onClick={handleConnect}
               className="rounded-lg px-4 py-2 active:scale-95 transition-transform"
               style={{
                 background: i === 0 ? "var(--brand-emerald)" : "transparent",

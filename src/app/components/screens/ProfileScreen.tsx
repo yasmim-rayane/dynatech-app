@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   ChevronRight,
   User,
@@ -13,6 +14,8 @@ import {
   Sun,
 } from "lucide-react";
 import { useTheme } from "../ThemeContext";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { BleClient } from "@capacitor-community/bluetooth-le";
 
 export function ProfileScreen({
   onLogout,
@@ -25,6 +28,47 @@ export function ProfileScreen({
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
+
+  const [notifPerm, setNotifPerm] = useState("Verificando...");
+  const [btPerm, setBtPerm] = useState("Verificando...");
+
+  useEffect(() => {
+    async function checkPerms() {
+      // Verifica Notificações
+      try {
+        const { display } = await LocalNotifications.checkPermissions();
+        setNotifPerm(display === "granted" ? "Permitido" : "Negado");
+      } catch (e) {
+        setNotifPerm("Indisponível");
+      }
+
+      // Verifica Bluetooth
+      try {
+        const isEnabled = await BleClient.isEnabled();
+        setBtPerm(isEnabled ? "Ligado / Permitido" : "Desligado");
+      } catch (e) {
+        setBtPerm("Negado ou Sem Suporte");
+      }
+    }
+    checkPerms();
+  }, []);
+
+  async function handleRequestNotif() {
+    try {
+      const { display } = await LocalNotifications.requestPermissions();
+      setNotifPerm(display === "granted" ? "Permitido" : "Negado");
+    } catch {}
+  }
+
+  async function handleRequestBt() {
+    try {
+      await BleClient.initialize();
+      const isEnabled = await BleClient.isEnabled();
+      setBtPerm(isEnabled ? "Ligado / Permitido" : "Desligado");
+    } catch {
+      setBtPerm("Negado ou Sem Suporte");
+    }
+  }
 
   type Item = {
     Icon: typeof User;
@@ -50,8 +94,8 @@ export function ProfileScreen({
     {
       title: "Permissões",
       items: [
-        { Icon: Bluetooth, label: "Bluetooth", value: "Permitido" },
-        { Icon: Bell, label: "Notificações", value: "Permitido" },
+        { Icon: Bluetooth, label: "Bluetooth", value: btPerm, onClick: handleRequestBt },
+        { Icon: Bell, label: "Notificações", value: notifPerm, onClick: handleRequestNotif },
       ],
     },
   ];

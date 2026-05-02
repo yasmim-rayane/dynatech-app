@@ -9,10 +9,42 @@ import {
   Check,
   TrendingUp,
 } from "lucide-react";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 type Type = "grip" | "pinch";
 type Side = "left" | "right";
 type Step = "type" | "side" | "live" | "result";
+
+function playSuccessFeedback() {
+  // Vibração (via Capacitor)
+  try {
+    Haptics.impact({ style: ImpactStyle.Heavy });
+  } catch (e) {}
+
+  // Som "Plim" (via Web Audio API)
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = "sine";
+    // Toca a nota lá (A5) e escorrega rapidamente para a próxima oitava (A6)
+    osc.frequency.setValueAtTime(880, ctx.currentTime); 
+    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
+
+    // Fade out para não dar "estalo" no fim
+    gainNode.gain.setValueAtTime(1, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {}
+}
 
 export function MeasurementScreen({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<Step>("type");
@@ -63,6 +95,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     setRunning(false);
     if (intervalRef.current) window.clearInterval(intervalRef.current);
     setStep("result");
+    playSuccessFeedback();
   }
 
   function reset() {
