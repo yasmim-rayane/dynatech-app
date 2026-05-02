@@ -85,7 +85,7 @@ export function GeneralSettingsScreen({
 
   return (
     <div
-      className="h-full w-full animate-slideInRight"
+      className="min-h-full w-full animate-slideInRight"
       style={{ background: "var(--brand-card)" }}
     >
       <div className="px-5 pt-4 pb-2 flex items-center gap-3">

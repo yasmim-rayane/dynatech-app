@@ -129,7 +129,7 @@ export function RemindersScreen({
 
   return (
     <div
-      className="h-full w-full px-6 pt-6"
+      className="min-h-full w-full px-6 pt-6"
       style={{ background: "var(--brand-card)" }}
     >
       {/* Header */}

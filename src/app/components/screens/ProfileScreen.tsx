@@ -58,7 +58,7 @@ export function ProfileScreen({
 
   return (
     <div
-      className="h-full w-full"
+      className="min-h-full w-full"
       style={{ background: "var(--brand-card)" }}
     >
       <div

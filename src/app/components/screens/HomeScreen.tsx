@@ -9,8 +9,8 @@ export function HomeScreen({
 }) {
   return (
     <div
-      className="h-full w-full"
-      style={{ background: "var(--brand-surface)" }}
+      className="min-h-full w-full"
+      style={{ background: "var(--brand-card)" }}
     >
       {/* Header gradient */}
       <div
