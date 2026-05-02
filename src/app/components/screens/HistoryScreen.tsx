@@ -8,7 +8,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { FileText, Table } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const dataMap: Record<string, { name: string; v: number }[]> = {
   "15": [
@@ -40,6 +46,64 @@ export function HistoryScreen() {
     { date: "24/04", time: "19:40", type: "Preensão", value: 41.8 },
     { date: "23/04", time: "07:52", type: "Preensão", value: 40.9 },
   ];
+
+  async function exportToPDF() {
+    try {
+      const doc = new jsPDF();
+      doc.text(`Relatório DynaTech - Histórico de ${range} dias`, 14, 15);
+      
+      const tableData = dataMap[range].map((d) => [d.name, d.v]);
+      
+      autoTable(doc, {
+        head: [['Período', 'Força (kgf)']],
+        body: tableData,
+        startY: 25,
+      });
+
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      const fileName = `DynaTech_Relatorio_${range}dias.pdf`;
+      const savedFile = await Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Cache,
+      });
+
+      await Share.share({
+        title: 'Exportar Relatório PDF',
+        url: savedFile.uri,
+        dialogTitle: 'Salvar ou compartilhar relatório',
+      });
+    } catch (e) {
+      console.error('Erro ao exportar PDF', e);
+    }
+  }
+
+  async function exportToXLSX() {
+    try {
+      const worksheetData = [['Período', 'Força (kgf)'], ...dataMap[range].map(d => [d.name, d.v])];
+      const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Histórico ${range} dias`);
+
+      const xlsxBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+
+      const fileName = `DynaTech_Relatorio_${range}dias.xlsx`;
+      const savedFile = await Filesystem.writeFile({
+        path: fileName,
+        data: xlsxBase64,
+        directory: Directory.Cache,
+      });
+
+      await Share.share({
+        title: 'Exportar Tabela XLSX',
+        url: savedFile.uri,
+        dialogTitle: 'Salvar ou compartilhar tabela',
+      });
+    } catch (e) {
+      console.error('Erro ao exportar XLSX', e);
+    }
+  }
 
   return (
     <div
@@ -126,11 +190,29 @@ export function HistoryScreen() {
                   width={28}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "var(--brand-card)",
-                    border: "1px solid var(--brand-border)",
-                    borderRadius: 8,
-                    color: "var(--brand-text)",
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const formattedLabel = String(label).replace("S", "Semana ").replace("D", "Dia ");
+                      return (
+                        <div
+                          style={{
+                            background: "var(--brand-card)",
+                            border: "1px solid var(--brand-border-soft)",
+                            borderRadius: 8,
+                            padding: "8px 12px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                          }}
+                        >
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--brand-text-faint)", fontWeight: 600, letterSpacing: "0.02em" }}>
+                            {formattedLabel.toUpperCase()}
+                          </p>
+                          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--brand-emerald)", marginTop: 2 }}>
+                            {Number(payload[0].value).toFixed(1)} kgf
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
                 />
                 <Line
@@ -144,6 +226,25 @@ export function HistoryScreen() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        <div className="flex gap-3 mt-5 mb-2 animate-fadeSlideUp" style={{ animationDelay: '0.1s' }}>
+          <button 
+            onClick={exportToPDF}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all active:scale-95 shadow-sm"
+            style={{ background: "#EF4444", color: "#fff", fontWeight: 600, fontSize: 14 }}
+          >
+            <FileText size={18} />
+            Exportar PDF
+          </button>
+          <button 
+            onClick={exportToXLSX}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all active:scale-95 shadow-sm"
+            style={{ background: "#10B981", color: "#fff", fontWeight: 600, fontSize: 14 }}
+          >
+            <Table size={18} />
+            Exportar Tabela
+          </button>
         </div>
 
         <h3

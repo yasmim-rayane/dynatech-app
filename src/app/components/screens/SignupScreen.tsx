@@ -144,6 +144,7 @@ export function SignupScreen({
             onChange={(e) => setName(e.target.value)}
             onBlur={() => touch("name")}
             placeholder="Maria Silva"
+            maxLength={90}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.name && !nameOk ? errorInputStyle : inputStyle}
           />
@@ -165,6 +166,7 @@ export function SignupScreen({
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => touch("email")}
             placeholder="maria@email.com"
+            maxLength={45}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.email && !emailOk ? errorInputStyle : inputStyle}
           />
@@ -185,6 +187,7 @@ export function SignupScreen({
             onChange={(e) => setUsername(e.target.value)}
             onBlur={() => touch("username")}
             placeholder="@maria"
+            maxLength={15}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.username && !usernameOk ? errorInputStyle : inputStyle}
           />
@@ -278,25 +281,41 @@ export function SignupScreen({
 
         {/* Peso e Altura */}
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { l: "Peso (kg)", p: "70", val: peso, set: setPeso },
-            { l: "Altura (cm)", p: "170", val: altura, set: setAltura },
-          ].map((f) => (
-            <div key={f.l}>
-              <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-                {f.l}
-              </label>
-              <input
-                inputMode="numeric"
-                placeholder={f.p}
-                value={f.val}
-                onChange={(e) => f.set(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                maxLength={3}
-                className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-                style={inputStyle}
-              />
-            </div>
-          ))}
+          <div>
+            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+              Peso (kg)
+            </label>
+            <input
+              inputMode="decimal"
+              placeholder="70.00"
+              value={peso}
+              onChange={(e) => {
+                let val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                const parts = val.split(".");
+                if (parts[0].length > 3) parts[0] = parts[0].slice(0, 3);
+                if (parts.length > 1) parts[1] = parts[1].slice(0, 2);
+                setPeso(parts.slice(0, 2).join("."));
+              }}
+              onBlur={() => { if(peso) setPeso(Number(peso).toFixed(2)) }}
+              maxLength={6}
+              className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+              Altura (cm)
+            </label>
+            <input
+              inputMode="numeric"
+              placeholder="170"
+              value={altura}
+              onChange={(e) => setAltura(e.target.value.replace(/\D/g, "").slice(0, 3))}
+              maxLength={3}
+              className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
+              style={inputStyle}
+            />
+          </div>
         </div>
 
         {/* Gênero */}

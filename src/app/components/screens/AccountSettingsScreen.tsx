@@ -79,6 +79,7 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                maxLength={90}
                 className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
                 style={!nameOk ? errorInputStyle : inputStyle}
               />
@@ -93,6 +94,7 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                maxLength={45}
                 className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
                 style={!emailOk ? errorInputStyle : inputStyle}
               />
@@ -110,10 +112,17 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
               <div className="relative mt-1.5">
                 <Scale size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
                 <input
-                  inputMode="numeric"
-                  maxLength={3}
+                  inputMode="decimal"
+                  maxLength={6}
                   value={peso}
-                  onChange={(e) => setPeso(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
+                    const parts = val.split(".");
+                    if (parts[0].length > 3) parts[0] = parts[0].slice(0, 3);
+                    if (parts.length > 1) parts[1] = parts[1].slice(0, 2);
+                    setPeso(parts.slice(0, 2).join("."));
+                  }}
+                  onBlur={() => { if(peso) setPeso(Number(peso).toFixed(2)) }}
                   className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
                   style={!pesoOk ? errorInputStyle : inputStyle}
                 />

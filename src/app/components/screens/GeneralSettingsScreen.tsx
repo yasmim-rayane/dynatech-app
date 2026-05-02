@@ -12,6 +12,7 @@ import {
   Moon,
   Bluetooth,
   Bell,
+  X,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { usePreferences } from "../../contexts/PreferencesContext";
@@ -31,6 +32,7 @@ export function GeneralSettingsScreen({
   const [autoSync, setAutoSync] = useState(true);
   const [cacheSize, setCacheSize] = useState<string>("Calculando...");
   const [isClearing, setIsClearing] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   const [notifPerm, setNotifPerm] = useState("Verificando...");
   const [btPerm, setBtPerm] = useState("Verificando...");
@@ -219,9 +221,55 @@ export function GeneralSettingsScreen({
         </Group>
 
         <Group title="Sobre" delay={0.25}>
-          <NavRow Icon={Info} label="Versão do app" value="1.0.0" />
+          <NavRow 
+            Icon={Info} 
+            label="Versão do app" 
+            value="1.0.0" 
+            onClick={() => setShowChangelog(true)} 
+          />
         </Group>
       </div>
+
+      {showChangelog && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center animate-fadeIn" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}>
+          <div 
+            className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden animate-slideUp flex flex-col max-h-[85vh]"
+            style={{ background: "var(--brand-card)", boxShadow: "0 -4px 24px rgba(0,0,0,0.1)" }}
+          >
+            <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: "var(--brand-border-soft)" }}>
+              <h3 style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>Histórico de Versões</h3>
+              <button onClick={() => setShowChangelog(false)} className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform" style={{ background: "var(--brand-chip-bg)" }}>
+                <X size={18} style={{ color: "var(--brand-text)" }} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-8 no-scrollbar">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span style={{ color: "var(--brand-emerald)", fontSize: 17, fontWeight: 700 }}>v1.0.0</span>
+                  <span className="px-2 py-0.5 rounded-md" style={{ background: "var(--brand-emerald-soft)", color: "var(--brand-emerald)", fontSize: 11, fontWeight: 700 }}>ATUAL</span>
+                </div>
+                <ul className="space-y-2" style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: "1.5" }}>
+                  <li>• Lançamento oficial da versão Release Candidate.</li>
+                  <li>• Pareamento Bluetooth e conexão nativa aprimorados.</li>
+                  <li>• Notificações locais integradas com o sistema de lembretes.</li>
+                  <li>• Feedback tátil (Haptics) e áudio dinâmico durante medições.</li>
+                </ul>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span style={{ color: "var(--brand-text)", fontSize: 16, fontWeight: 600 }}>v0.9.0</span>
+                  <span className="px-2 py-0.5 rounded-md" style={{ background: "var(--brand-chip-bg)", color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 600 }}>BETA</span>
+                </div>
+                <ul className="space-y-2" style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: "1.5" }}>
+                  <li>• Interface redesenhada para suportar Modo Escuro dinâmico.</li>
+                  <li>• Gerenciamento completo de cache e armazenamento.</li>
+                  <li>• Validações estritas de segurança para cadastro e senhas.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

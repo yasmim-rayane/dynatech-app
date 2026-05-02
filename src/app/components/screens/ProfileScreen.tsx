@@ -38,7 +38,7 @@ export function ProfileScreen({
       title: "Configurações de conta",
       items: [
         { Icon: User, label: "Nome", value: "Maria Silva", onClick: onOpenAccount },
-        { Icon: Scale, label: "Peso", value: "62 kg", onClick: onOpenAccount },
+        { Icon: Scale, label: "Peso", value: "62.00 kg", onClick: onOpenAccount },
         { Icon: Ruler, label: "Altura", value: "168 cm", onClick: onOpenAccount },
         { Icon: Mail, label: "E-mail", value: "maria@email.com", onClick: onOpenAccount },
         { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
