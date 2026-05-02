@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dyna Tech</string>
+    <string name="title_activity_main">Dyna Tech</string>
+    <string name="package_name">com.dynatech.app</string>
+    <string name="custom_url_scheme">com.dynatech.app</string>
+</resources>

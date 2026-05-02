@@ -1,0 +1,5 @@
+package com.dynatech.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}
