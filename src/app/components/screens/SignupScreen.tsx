@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, AlertCircle, CheckCircle2, Calendar } from "lucide-react";
 
 /* ── Helpers de validação ──────────────────────────────────── */
 
@@ -60,7 +60,7 @@ export function SignupScreen({
   const confirmOk = confirm.length > 0 && confirm === password;
   const dobOk = validateDate(dob);
   const nameOk = name.trim().length >= 2;
-  const usernameOk = username.trim().length >= 2;
+  const usernameOk = username.trim().length >= 4;
 
   /* Formulário inteiro válido */
   const formValid = useMemo(
@@ -193,7 +193,7 @@ export function SignupScreen({
           />
           {touched.username && !usernameOk && (
             <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Mínimo de 2 caracteres
+              <AlertCircle size={12} /> Mínimo de 4 caracteres
             </div>
           )}
         </div>
@@ -257,16 +257,31 @@ export function SignupScreen({
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Data de nascimento
           </label>
-          <input
-            inputMode="numeric"
-            value={dob}
-            onChange={(e) => handleDobChange(e.target.value)}
-            onBlur={() => touch("dob")}
-            placeholder="DD/MM/AAAA"
-            maxLength={10}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.dob && !dobOk ? errorInputStyle : inputStyle}
-          />
+          <div className="relative mt-1.5">
+            <input
+              inputMode="numeric"
+              value={dob}
+              onChange={(e) => handleDobChange(e.target.value)}
+              onBlur={() => touch("dob")}
+              placeholder="DD/MM/AAAA"
+              maxLength={10}
+              className="w-full h-12 pl-4 pr-12 rounded-xl outline-none"
+              style={touched.dob && !dobOk ? errorInputStyle : inputStyle}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center overflow-hidden">
+              <Calendar size={20} style={{ color: "var(--brand-text-faint)" }} />
+              <input
+                type="date"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => {
+                  if(e.target.value) {
+                    const [y, m, d] = e.target.value.split('-');
+                    handleDobChange(`${d}/${m}/${y}`);
+                  }
+                }}
+              />
+            </div>
+          </div>
           {touched.dob && dob.length > 0 && !dobOk && (
             <div style={errorTextStyle}>
               <AlertCircle size={12} /> Data inválida. Use o formato DD/MM/AAAA

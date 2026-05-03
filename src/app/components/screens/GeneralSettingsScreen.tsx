@@ -22,9 +22,11 @@ import { BleClient } from "@capacitor-community/bluetooth-le";
 export function GeneralSettingsScreen({
   onBack,
   onOpenPairing,
+  onLogout,
 }: {
   onBack: () => void;
   onOpenPairing: () => void;
+  onLogout?: () => void;
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
@@ -33,6 +35,8 @@ export function GeneralSettingsScreen({
   const [cacheSize, setCacheSize] = useState<string>("Calculando...");
   const [isClearing, setIsClearing] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const [notifPerm, setNotifPerm] = useState("Verificando...");
   const [btPerm, setBtPerm] = useState("Verificando...");
@@ -167,8 +171,8 @@ export function GeneralSettingsScreen({
         </Group>
 
         <Group title="Preferências" delay={0.1}>
-          <NavRow Icon={Globe} label="Idioma" value="Português (BR)" />
-          <NavRow Icon={Ruler} label="Unidade de medida" value="kgf" />
+          <NavRow Icon={Globe} label="Idioma" value="Português (BR)" hideArrow />
+          <NavRow Icon={Ruler} label="Unidade de medida" value="kgf" hideArrow />
         </Group>
 
         <Group title="Som e vibração" delay={0.15}>
@@ -228,6 +232,15 @@ export function GeneralSettingsScreen({
             onClick={() => setShowChangelog(true)} 
           />
         </Group>
+
+        <Group title="Zona de perigo" delay={0.3} danger>
+          <NavRow 
+            Icon={Trash2} 
+            label="Excluir conta" 
+            danger 
+            onClick={() => setShowDeleteModal(true)} 
+          />
+        </Group>
       </div>
 
       {showChangelog && (
@@ -270,6 +283,71 @@ export function GeneralSettingsScreen({
           </div>
         </div>
       )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center animate-fadeIn px-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div 
+            className="w-full sm:max-w-sm rounded-3xl overflow-hidden animate-slideUp p-6 flex flex-col"
+            style={{ background: "var(--brand-card)", boxShadow: "0 10px 40px rgba(0,0,0,0.2)" }}
+          >
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: "var(--brand-danger-soft)" }}>
+              <Trash2 size={24} style={{ color: "var(--brand-danger)" }} />
+            </div>
+            
+            <h3 style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 8 }}>
+              Excluir sua conta?
+            </h3>
+            
+            <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.5, marginBottom: 20 }}>
+              Sua conta e dados poderão ser recuperados caso você faça login novamente em até <strong>60 dias</strong>. Após esse período, a exclusão será <strong>permanente</strong>.
+            </p>
+
+            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 600, marginBottom: 8 }}>
+              Digite sua senha para confirmar
+            </label>
+            <input
+              type="password"
+              placeholder="Sua senha"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl outline-none mb-6 transition-all"
+              style={{
+                background: "var(--brand-chip-bg)",
+                color: "var(--brand-text)",
+                border: "1px solid var(--brand-border-soft)"
+              }}
+            />
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeletePassword("");
+                }}
+                className="flex-1 h-12 rounded-xl font-semibold transition-transform active:scale-95"
+                style={{ background: "var(--brand-chip-bg)", color: "var(--brand-text)" }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  if (deletePassword && onLogout) {
+                    onLogout();
+                  }
+                }}
+                disabled={!deletePassword}
+                className="flex-1 h-12 rounded-xl font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+                style={{ 
+                  background: deletePassword ? "var(--brand-danger)" : "var(--brand-border)", 
+                  color: "#fff" 
+                }}
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -278,17 +356,19 @@ function Group({
   title,
   children,
   delay = 0,
+  danger = false,
 }: {
   title: string;
   children: React.ReactNode;
   delay?: number;
+  danger?: boolean;
 }) {
   return (
     <div className="animate-fadeSlideUp" style={{ animationDelay: `${delay}s` }}>
       <div
         className="px-2 mb-2"
         style={{
-          color: "var(--brand-text-faint)",
+          color: danger ? "var(--brand-danger)" : "var(--brand-text-faint)",
           fontSize: 11,
           fontWeight: 600,
           letterSpacing: "0.04em",
@@ -299,8 +379,8 @@ function Group({
       <div
         className="rounded-2xl overflow-hidden"
         style={{
-          background: "var(--brand-card)",
-          border: "1px solid var(--brand-border-soft)",
+          background: danger ? "var(--brand-danger-soft)" : "var(--brand-card)",
+          border: danger ? "1px solid var(--brand-danger)" : "1px solid var(--brand-border-soft)",
         }}
       >
         {children}
@@ -314,12 +394,14 @@ function NavRow({
   label,
   value,
   danger,
+  hideArrow,
   onClick,
 }: {
   Icon: typeof Globe;
   label: string;
   value?: string;
   danger?: boolean;
+  hideArrow?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -352,7 +434,9 @@ function NavRow({
       >
         {value}
       </span>
-      <ChevronRight size={16} style={{ color: "var(--brand-text-faint)" }} />
+      {!hideArrow && (
+        <ChevronRight size={16} style={{ color: "var(--brand-text-faint)" }} />
+      )}
     </button>
   );
 }

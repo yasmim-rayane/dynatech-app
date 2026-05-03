@@ -33,7 +33,7 @@ export function LoginScreen({
       </div>
 
       <div className="space-y-4">
-        <Field label="E-mail ou usuário" Icon={Mail} type="email" placeholder="seu@email.com" />
+        <Field label="E-mail ou usuário" Icon={Mail} type="email" placeholder="usuário ou seu@email.com" />
         <div>
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Senha

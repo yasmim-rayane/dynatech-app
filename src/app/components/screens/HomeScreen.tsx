@@ -103,9 +103,9 @@ export function HomeScreen({
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp size={16} style={{ color: "var(--brand-emerald)" }} />
+            <Hand size={16} style={{ color: "var(--brand-emerald)" }} />
             <span style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>
-              Resumo da semana
+              Resumo Semanal - Palmar
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -113,6 +113,49 @@ export function HomeScreen({
               { label: "Sessões", value: "12", unit: "" },
               { label: "Média", value: "41.2", unit: "kgf" },
               { label: "Pico", value: "44.8", unit: "kgf" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl p-3 text-center"
+                style={{ background: "var(--brand-chip-bg)" }}
+              >
+                <div className="flex items-baseline justify-center gap-1">
+                  <span style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700 }}>
+                    {s.value}
+                  </span>
+                  {s.unit && (
+                    <span style={{ color: "var(--brand-text-muted)", fontSize: 10, fontWeight: 500 }}>
+                      {s.unit}
+                    </span>
+                  )}
+                </div>
+                <div style={{ color: "var(--brand-text-muted)", fontSize: 11 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="rounded-2xl p-4 shadow-sm animate-fadeSlideUp"
+          style={{
+            background: "var(--brand-card)",
+            border: "1px solid var(--brand-border-soft)",
+            animationDelay: "0.5s",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={16} style={{ color: "var(--brand-cyan)" }} />
+            <span style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>
+              Resumo Semanal - Pinça
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Sessões", value: "8", unit: "" },
+              { label: "Média", value: "8.5", unit: "kgf" },
+              { label: "Pico", value: "9.2", unit: "kgf" },
             ].map((s) => (
               <div
                 key={s.label}

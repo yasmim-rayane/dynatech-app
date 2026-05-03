@@ -52,6 +52,10 @@ function Shell() {
       <GeneralSettingsScreen
         onBack={() => setSub(null)}
         onOpenPairing={() => setSub("pairing")}
+        onLogout={() => {
+          setSub(null);
+          setStage("login");
+        }}
       />
     );
   } else if (sub === "pairing") {
