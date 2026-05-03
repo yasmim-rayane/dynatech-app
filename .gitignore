@@ -37,3 +37,6 @@ yarn-error.log*
 /android/app/release
 /android/app/debug
 /android/app/generated
+
+# Quarentena (arquivos não utilizados)
+_quarentena

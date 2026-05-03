@@ -213,6 +213,8 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
           className="w-full rounded-xl shadow-md mt-4 transition-all"
           style={{
             height: 52,
+            minHeight: 52,
+            flexShrink: 0,
             background: formValid ? "var(--brand-button-grad)" : "var(--brand-border)",
             color: formValid ? "var(--brand-on-header)" : "var(--brand-text-faint)",
             fontSize: 15,

@@ -115,7 +115,7 @@ export function SignupScreen({
 
   return (
     <div
-      className="h-full w-full flex flex-col animate-slideInRight"
+      className="min-h-full w-full flex flex-col animate-slideInRight"
       style={{ background: "var(--brand-card)" }}
     >
       {/* Header */}
@@ -367,13 +367,14 @@ export function SignupScreen({
           className="w-full rounded-xl shadow-md transition-all duration-200"
           style={{
             height: 52,
+            minHeight: 52,
+            flexShrink: 0,
             background: formValid ? "var(--brand-button-grad)" : "var(--brand-border)",
             color: formValid ? "var(--brand-on-header)" : "var(--brand-text-faint)",
             fontSize: 15,
             fontWeight: 600,
             cursor: formValid ? "pointer" : "not-allowed",
             opacity: formValid ? 1 : 0.7,
-            transform: "scale(1)",
           }}
         >
           Criar conta

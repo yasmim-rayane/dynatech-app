@@ -55,7 +55,7 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div
-      className="h-full w-full flex flex-col animate-slideInRight"
+      className="min-h-full w-full flex flex-col animate-slideInRight"
       style={{ background: "var(--brand-card)" }}
     >
       <div className="px-5 pt-4 pb-2 flex items-center gap-3">
@@ -118,6 +118,8 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
               className="w-full rounded-xl shadow-md mt-6 transition-all duration-200 active:scale-95"
               style={{
                 height: 52,
+                minHeight: 52,
+                flexShrink: 0,
                 background: identifierOk ? "var(--brand-button-grad)" : "var(--brand-border)",
                 color: identifierOk ? "var(--brand-on-header)" : "var(--brand-text-faint)",
                 fontSize: 15,
@@ -171,6 +173,8 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
               className="w-full rounded-xl shadow-md mt-6 transition-all duration-200 active:scale-95"
               style={{
                 height: 52,
+                minHeight: 52,
+                flexShrink: 0,
                 background: codeOk ? "var(--brand-button-grad)" : "var(--brand-border)",
                 color: codeOk ? "var(--brand-on-header)" : "var(--brand-text-faint)",
                 fontSize: 15,
@@ -269,6 +273,8 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
               className="w-full rounded-xl shadow-md mt-8 transition-all duration-200 active:scale-95"
               style={{
                 height: 52,
+                minHeight: 52,
+                flexShrink: 0,
                 background: newPasswordOk ? "var(--brand-button-grad)" : "var(--brand-border)",
                 color: newPasswordOk ? "var(--brand-on-header)" : "var(--brand-text-faint)",
                 fontSize: 15,

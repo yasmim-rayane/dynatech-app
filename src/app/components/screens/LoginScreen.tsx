@@ -14,7 +14,7 @@ export function LoginScreen({
   const [showPwd, setShowPwd] = useState(false);
   return (
     <div
-      className="h-full w-full flex flex-col px-7 pt-8 pb-8 animate-fadeSlideUp"
+      className="min-h-full w-full px-7 pt-8 pb-8 animate-fadeSlideUp"
       style={{ background: "var(--brand-card)" }}
     >
       <div className="flex flex-col items-center mt-6 mb-10">
@@ -77,9 +77,11 @@ export function LoginScreen({
 
       <button
         onClick={onLogin}
-        className="mt-8 rounded-xl shadow-md active:scale-[0.97] transition-transform"
+        className="w-full mt-8 rounded-xl shadow-md active:scale-[0.97] transition-transform"
         style={{
           height: 52,
+          minHeight: 52,
+          flexShrink: 0,
           background: "var(--brand-button-grad)",
           color: "var(--brand-on-header)",
           fontSize: 15,
