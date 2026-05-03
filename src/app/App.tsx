@@ -54,6 +54,7 @@ function Shell() {
         onOpenPairing={() => setSub("pairing")}
         onLogout={() => {
           setSub(null);
+          setTab("home");
           setStage("login");
         }}
       />
@@ -78,7 +79,10 @@ function Shell() {
     else
       inner = (
         <ProfileScreen
-          onLogout={() => setStage("login")}
+          onLogout={() => {
+            setTab("home");
+            setStage("login");
+          }}
           onOpenAccount={() => setSub("account")}
           onOpenGeneral={() => setSub("general")}
         />

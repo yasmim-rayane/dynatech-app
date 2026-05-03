@@ -355,10 +355,14 @@ export function SignupScreen({
 
       {/* CTA fixo */}
       <div
-        className="absolute bottom-0 left-0 right-0 px-6 pb-8 pt-4 safe-bottom"
+        className="absolute bottom-0 left-0 right-0 safe-bottom"
         style={{
+          paddingLeft: 24,
+          paddingRight: 24,
+          paddingTop: 4,
+          paddingBottom: 48,
           background:
-            "linear-gradient(to top, var(--brand-card) 60%, transparent)",
+            "linear-gradient(to top, var(--brand-card) 70%, transparent)",
         }}
       >
         <button
