@@ -14,7 +14,8 @@ import { usePreferences } from "../../contexts/PreferencesContext";
 
 type Type = "grip" | "pinch";
 type Side = "left" | "right";
-type Step = "type" | "side" | "live" | "result";
+type Finger = "indicador" | "medio" | "anelar" | "minimo";
+type Step = "type" | "side" | "finger" | "live" | "result";
 
 function playSuccessFeedback(soundOn: boolean, vibrationOn: boolean) {
   // Vibração (via Capacitor)
@@ -56,6 +57,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState<Step>("type");
   const [type, setType] = useState<Type | null>(null);
   const [side, setSide] = useState<Side | null>(null);
+  const [finger, setFinger] = useState<Finger | null>(null);
   const [reading, setReading] = useState(0);
   const [peak, setPeak] = useState(0);
   const [running, setRunning] = useState(false);
@@ -108,6 +110,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     setStep("type");
     setType(null);
     setSide(null);
+    setFinger(null);
     setReading(0);
     setPeak(0);
     setSecondsLeft(5);
@@ -121,7 +124,11 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     >
       <div className="px-5 pt-4 pb-2 flex items-center gap-3">
         <button
-          onClick={step === "type" || step === "result" ? onBack : () => setStep(step === "live" ? "side" : "type")}
+          onClick={step === "type" || step === "result" ? onBack : () => {
+            if (step === "live") setStep(type === "pinch" ? "finger" : "side");
+            else if (step === "finger") setStep("side");
+            else setStep("type");
+          }}
           className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform"
           style={{ background: "var(--brand-chip-bg)" }}
         >
@@ -132,7 +139,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
         </h2>
       </div>
 
-      {step !== "result" && <Stepper step={step} />}
+      {step !== "result" && <Stepper step={step} type={type} />}
 
       <div className="px-6 pt-4 pb-10">
         {step === "type" && (
@@ -150,6 +157,22 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             side={side}
             onSelect={(s) => {
               setSide(s);
+              if (type === "pinch") {
+                setTimeout(() => setStep("finger"), 350);
+              } else {
+                setTimeout(() => {
+                  setStep("live");
+                  setTimeout(startRun, 400);
+                }, 350);
+              }
+            }}
+          />
+        )}
+        {step === "finger" && type === "pinch" && side && (
+          <FingerStep
+            finger={finger}
+            onSelect={(f) => {
+              setFinger(f);
               setTimeout(() => {
                 setStep("live");
                 setTimeout(startRun, 400);
@@ -161,6 +184,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
           <LiveStep
             type={type}
             side={side}
+            finger={finger}
             reading={reading}
             peak={peak}
             max={max}
@@ -174,6 +198,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
           <ResultStep
             type={type}
             side={side}
+            finger={finger}
             peak={peak}
             onSave={onBack}
             onRetry={reset}
@@ -184,11 +209,13 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-function Stepper({ step }: { step: Step }) {
-  const idx = step === "type" ? 0 : step === "side" ? 1 : 2;
+function Stepper({ step, type }: { step: Step; type: Type | null }) {
+  const isPinch = type === "pinch";
+  const steps = isPinch ? 4 : 3;
+  const idx = step === "type" ? 0 : step === "side" ? 1 : step === "finger" ? 2 : isPinch ? 3 : 2;
   return (
     <div className="px-6 mt-2 flex gap-2">
-      {[0, 1, 2].map((i) => (
+      {Array.from({ length: steps }).map((_, i) => (
         <div
           key={i}
           className="flex-1 h-1 rounded-full"
@@ -319,9 +346,65 @@ function SideStep({
   );
 }
 
+const FINGER_OPTS: { key: Finger; label: string }[] = [
+  { key: "indicador", label: "Indicador" },
+  { key: "medio", label: "Médio" },
+  { key: "anelar", label: "Anelar" },
+  { key: "minimo", label: "Mínimo" },
+];
+
+function FingerStep({
+  finger,
+  onSelect,
+}: {
+  finger: Finger | null;
+  onSelect: (f: Finger) => void;
+}) {
+  return (
+    <div className="space-y-4 animate-fadeSlideUp">
+      <div>
+        <h3 style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          Qual dedo?
+        </h3>
+        <p style={{ color: "var(--brand-text-muted)", fontSize: 13 }} className="mt-1">
+          Selecione o dedo para a medição de pinça.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {FINGER_OPTS.map((o) => {
+          const active = o.key === finger;
+          return (
+            <button
+              key={o.key}
+              onClick={() => onSelect(o.key)}
+              className="rounded-2xl p-4 flex flex-col items-center gap-2 transition-all duration-200 active:scale-[0.96]"
+              style={{
+                background: "var(--brand-card)",
+                border: `1.5px solid ${active ? "var(--brand-emerald)" : "var(--brand-border-soft)"}`,
+                boxShadow: active ? "0 0 0 4px var(--brand-emerald-soft)" : "none",
+              }}
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: "var(--brand-chip-bg)" }}
+              >
+                <Zap size={22} style={{ color: "var(--brand-emerald)" }} />
+              </div>
+              <span style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>
+                {o.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LiveStep({
   type,
   side,
+  finger,
   reading,
   peak,
   max,
@@ -332,6 +415,7 @@ function LiveStep({
 }: {
   type: Type;
   side: Side;
+  finger: Finger | null;
   reading: number;
   peak: number;
   max: number;
@@ -340,6 +424,7 @@ function LiveStep({
   onStop: () => void;
   onStart: () => void;
 }) {
+  const fingerLabel = finger ? FINGER_OPTS.find(f => f.key === finger)?.label : "";
   const pct = Math.min(100, (reading / max) * 100);
   const radius = 110;
   const circ = 2 * Math.PI * radius;
@@ -352,7 +437,7 @@ function LiveStep({
         style={{ background: "var(--brand-chip-bg)" }}
       >
         <span style={{ color: "var(--brand-text-muted)", fontSize: 12, fontWeight: 600 }}>
-          {type === "grip" ? "Preensão Palmar" : "Força de Pinça"} · Mão{" "}
+          {type === "grip" ? "Preensão Palmar" : `Pinça · ${fingerLabel}`} · Mão{" "}
           {side === "left" ? "esquerda" : "direita"}
         </span>
       </div>
@@ -464,16 +549,19 @@ function LiveStep({
 function ResultStep({
   type,
   side,
+  finger,
   peak,
   onSave,
   onRetry,
 }: {
   type: Type;
   side: Side;
+  finger: Finger | null;
   peak: number;
   onSave: () => void;
   onRetry: () => void;
 }) {
+  const fingerLabel = finger ? FINGER_OPTS.find(f => f.key === finger)?.label : "";
   return (
     <div className="flex flex-col items-center animate-scaleIn">
       <div
@@ -489,7 +577,7 @@ function ResultStep({
         Medição concluída!
       </h3>
       <p style={{ color: "var(--brand-text-muted)", fontSize: 13 }} className="mt-1">
-        {type === "grip" ? "Preensão Palmar" : "Força de Pinça"} · Mão{" "}
+        {type === "grip" ? "Preensão Palmar" : `Pinça · ${fingerLabel}`} · Mão{" "}
         {side === "left" ? "esquerda" : "direita"}
       </p>
 

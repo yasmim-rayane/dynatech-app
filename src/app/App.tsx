@@ -7,6 +7,7 @@ import { LoginScreen } from "./components/screens/LoginScreen";
 import { SignupScreen } from "./components/screens/SignupScreen";
 import { ForgotScreen } from "./components/screens/ForgotScreen";
 import { PairingScreen } from "./components/screens/PairingScreen";
+import { TutorialScreen } from "./components/screens/TutorialScreen";
 import { HomeScreen } from "./components/screens/HomeScreen";
 import { HistoryScreen } from "./components/screens/HistoryScreen";
 import { RemindersScreen } from "./components/screens/RemindersScreen";
@@ -16,8 +17,8 @@ import { AccountSettingsScreen } from "./components/screens/AccountSettingsScree
 import { GeneralSettingsScreen } from "./components/screens/GeneralSettingsScreen";
 import { MeasurementScreen } from "./components/screens/MeasurementScreen";
 
-type Stage = "login" | "signup" | "forgot" | "pairing" | "app";
-type SubScreen = "notifications" | "account" | "general" | "pairing" | "measure" | null;
+type Stage = "login" | "signup" | "forgot" | "tutorial" | "pairing" | "app";
+type SubScreen = "notifications" | "account" | "general" | "pairing" | "measure" | "tutorial" | null;
 
 function Shell() {
   const { theme } = useTheme();
@@ -38,9 +39,11 @@ function Shell() {
       />
     );
   } else if (stage === "signup") {
-    content = <SignupScreen onComplete={() => setStage("pairing")} onBack={() => setStage("login")} />;
+    content = <SignupScreen onComplete={() => setStage("tutorial")} onBack={() => setStage("login")} />;
   } else if (stage === "forgot") {
     content = <ForgotScreen onBack={() => setStage("login")} />;
+  } else if (stage === "tutorial") {
+    content = <TutorialScreen onComplete={() => setStage("pairing")} />;
   } else if (stage === "pairing") {
     content = <PairingScreen onConnect={() => setStage("app")} />;
   } else if (sub === "notifications") {
@@ -59,6 +62,8 @@ function Shell() {
         }}
       />
     );
+  } else if (sub === "tutorial") {
+    content = <TutorialScreen onComplete={() => setSub(null)} onBack={() => setSub(null)} />;
   } else if (sub === "pairing") {
     content = <PairingScreen onConnect={() => setSub(null)} onBack={() => setSub(null)} />;
   } else if (sub === "measure") {
@@ -85,6 +90,7 @@ function Shell() {
           }}
           onOpenAccount={() => setSub("account")}
           onOpenGeneral={() => setSub("general")}
+          onOpenTutorial={() => setSub("tutorial")}
         />
       );
     content = inner;

@@ -48,6 +48,7 @@ export function SignupScreen({
   const [peso, setPeso] = useState("");
   const [altura, setAltura] = useState("");
   const [genero, setGenero] = useState("Selecione");
+  const [maoDominante, setMaoDominante] = useState("Selecione");
 
   /* Campos "tocados" — exibem erro somente após interação */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -61,6 +62,10 @@ export function SignupScreen({
   const dobOk = validateDate(dob);
   const nameOk = name.trim().length >= 2;
   const usernameOk = username.trim().length >= 4;
+  const pesoOk = peso.length > 0 && Number(peso) > 0;
+  const alturaOk = altura.length > 0 && Number(altura) > 0;
+  const generoOk = genero !== "Selecione";
+  const maoOk = maoDominante !== "Selecione";
 
   /* Formulário inteiro válido */
   const formValid = useMemo(
@@ -70,8 +75,12 @@ export function SignupScreen({
       usernameOk &&
       pwChecks.valid &&
       confirmOk &&
-      dobOk,
-    [nameOk, emailOk, usernameOk, pwChecks.valid, confirmOk, dobOk]
+      dobOk &&
+      pesoOk &&
+      alturaOk &&
+      generoOk &&
+      maoOk,
+    [nameOk, emailOk, usernameOk, pwChecks.valid, confirmOk, dobOk, pesoOk, alturaOk, generoOk, maoOk]
   );
 
   /* Máscara de data DD/MM/AAAA */
@@ -311,11 +320,19 @@ export function SignupScreen({
                 if (parts.length > 1) parts[1] = parts[1].slice(0, 2);
                 setPeso(parts.slice(0, 2).join("."));
               }}
-              onBlur={() => { if(peso) setPeso(Number(peso).toFixed(2)) }}
+              onBlur={() => {
+                touch("peso");
+                if(peso) setPeso(Number(peso).toFixed(2));
+              }}
               maxLength={6}
               className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-              style={inputStyle}
+              style={touched.peso && !pesoOk ? errorInputStyle : inputStyle}
             />
+            {touched.peso && !pesoOk && (
+              <div style={errorTextStyle}>
+                <AlertCircle size={12} /> Informe seu peso
+              </div>
+            )}
           </div>
           <div>
             <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
@@ -326,10 +343,16 @@ export function SignupScreen({
               placeholder="170"
               value={altura}
               onChange={(e) => setAltura(e.target.value.replace(/\D/g, "").slice(0, 3))}
+              onBlur={() => touch("altura")}
               maxLength={3}
               className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-              style={inputStyle}
+              style={touched.altura && !alturaOk ? errorInputStyle : inputStyle}
             />
+            {touched.altura && !alturaOk && (
+              <div style={errorTextStyle}>
+                <AlertCircle size={12} /> Informe sua altura
+              </div>
+            )}
           </div>
         </div>
 
@@ -340,9 +363,9 @@ export function SignupScreen({
           </label>
           <select
             value={genero}
-            onChange={(e) => setGenero(e.target.value)}
+            onChange={(e) => { setGenero(e.target.value); touch("genero"); }}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={inputStyle}
+            style={touched.genero && !generoOk ? errorInputStyle : inputStyle}
           >
             <option>Selecione</option>
             <option>Feminino</option>
@@ -350,6 +373,34 @@ export function SignupScreen({
             <option>Outro</option>
             <option>Prefiro não dizer</option>
           </select>
+          {touched.genero && !generoOk && (
+            <div style={errorTextStyle}>
+              <AlertCircle size={12} /> Selecione seu gênero
+            </div>
+          )}
+        </div>
+
+        {/* Mão dominante */}
+        <div>
+          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+            Mão dominante
+          </label>
+          <select
+            value={maoDominante}
+            onChange={(e) => { setMaoDominante(e.target.value); touch("mao"); }}
+            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
+            style={touched.mao && !maoOk ? errorInputStyle : inputStyle}
+          >
+            <option>Selecione</option>
+            <option>Direita</option>
+            <option>Esquerda</option>
+            <option>Ambidestro</option>
+          </select>
+          {touched.mao && !maoOk && (
+            <div style={errorTextStyle}>
+              <AlertCircle size={12} /> Selecione sua mão dominante
+            </div>
+          )}
         </div>
       </div>
 

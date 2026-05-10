@@ -12,6 +12,8 @@ import {
   LogOut,
   Moon,
   Sun,
+  HelpCircle,
+  Hand,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -19,10 +21,12 @@ export function ProfileScreen({
   onLogout,
   onOpenAccount,
   onOpenGeneral,
+  onOpenTutorial,
 }: {
   onLogout: () => void;
   onOpenAccount: () => void;
   onOpenGeneral: () => void;
+  onOpenTutorial: () => void;
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
@@ -40,6 +44,7 @@ export function ProfileScreen({
         { Icon: User, label: "Nome", value: "Maria Silva", onClick: onOpenAccount },
         { Icon: Scale, label: "Peso", value: "62.00 kg", onClick: onOpenAccount },
         { Icon: Ruler, label: "Altura", value: "168 cm", onClick: onOpenAccount },
+        { Icon: Hand, label: "Mão dominante", value: "Direita", onClick: onOpenAccount },
         { Icon: Mail, label: "E-mail", value: "maria@email.com", onClick: onOpenAccount },
         { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
       ],
@@ -47,6 +52,12 @@ export function ProfileScreen({
     {
       title: "Configurações do app",
       items: [{ Icon: Settings, label: "Geral", onClick: onOpenGeneral }],
+    },
+    {
+      title: "Ajuda",
+      items: [
+        { Icon: HelpCircle, label: "Tutorial do app", onClick: onOpenTutorial },
+      ],
     },
   ];
 

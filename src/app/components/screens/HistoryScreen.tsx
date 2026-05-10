@@ -17,63 +17,66 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 type ForceType = "palmar" | "pinca";
+type PalmarSub = "direita" | "esquerda";
+type PincaSub = "indicador" | "medio" | "anelar" | "minimo";
+type PincaHand = "direita" | "esquerda";
 
-const mockData: Record<ForceType, Record<string, { name: string; v: number }[]>> = {
-  palmar: {
-    "15": [
-      { name: "D1", v: 38 }, { name: "D3", v: 39 }, { name: "D5", v: 41 },
-      { name: "D7", v: 40 }, { name: "D9", v: 42 }, { name: "D11", v: 43 },
-      { name: "D13", v: 41.5 }, { name: "D15", v: 44 },
-    ],
-    "30": [
-      { name: "D1", v: 35 }, { name: "D5", v: 37 }, { name: "D10", v: 39 },
-      { name: "D15", v: 40 }, { name: "D20", v: 42 }, { name: "D25", v: 41 },
-      { name: "D30", v: 44 },
-    ],
-    "60": [
-      { name: "S1", v: 33 }, { name: "S2", v: 35 }, { name: "S3", v: 37 },
-      { name: "S4", v: 39 }, { name: "S5", v: 41 }, { name: "S6", v: 42 },
-      { name: "S7", v: 43 }, { name: "S8", v: 44.5 },
-    ],
-    "custom": [
-      { name: "P1", v: 36 }, { name: "P2", v: 38 }, { name: "P3", v: 39 },
-      { name: "P4", v: 41 }, { name: "P5", v: 43 },
-    ],
-  },
-  pinca: {
-    "15": [
-      { name: "D1", v: 7.5 }, { name: "D3", v: 7.8 }, { name: "D5", v: 8.0 },
-      { name: "D7", v: 8.1 }, { name: "D9", v: 8.4 }, { name: "D11", v: 8.3 },
-      { name: "D13", v: 8.5 }, { name: "D15", v: 8.8 },
-    ],
-    "30": [
-      { name: "D1", v: 7.0 }, { name: "D5", v: 7.5 }, { name: "D10", v: 7.8 },
-      { name: "D15", v: 8.2 }, { name: "D20", v: 8.4 }, { name: "D25", v: 8.7 },
-      { name: "D30", v: 9.0 },
-    ],
-    "60": [
-      { name: "S1", v: 6.5 }, { name: "S2", v: 6.8 }, { name: "S3", v: 7.1 },
-      { name: "S4", v: 7.5 }, { name: "S5", v: 7.9 }, { name: "S6", v: 8.2 },
-      { name: "S7", v: 8.5 }, { name: "S8", v: 8.9 },
-    ],
-    "custom": [
-      { name: "P1", v: 7.0 }, { name: "P2", v: 7.4 }, { name: "P3", v: 7.9 },
-      { name: "P4", v: 8.2 }, { name: "P5", v: 8.5 },
-    ],
-  }
+const PALMAR_SUBS: { key: PalmarSub; label: string }[] = [
+  { key: "direita", label: "Mão Direita" },
+  { key: "esquerda", label: "Mão Esquerda" },
+];
+const PINCA_SUBS: { key: PincaSub; label: string }[] = [
+  { key: "indicador", label: "Indicador" },
+  { key: "medio", label: "Médio" },
+  { key: "anelar", label: "Anelar" },
+  { key: "minimo", label: "Mínimo" },
+];
+const PINCA_HANDS: { key: PincaHand; label: string }[] = [
+  { key: "direita", label: "Mão Direita" },
+  { key: "esquerda", label: "Mão Esquerda" },
+];
+
+type DataPoint = { name: string; v: number }[];
+const gen = (base: number[], names: string[]): DataPoint =>
+  base.map((v, i) => ({ name: names[i] ?? `P${i + 1}`, v }));
+
+const d15n = ["Dia 1","Dia 3","Dia 5","Dia 7","Dia 9","Dia 11","Dia 13","Dia 15"];
+const d30n = ["Dia 1","Dia 5","Dia 10","Dia 15","Dia 20","Dia 25","Dia 30"];
+const d60n = ["Sem. 1","Sem. 2","Sem. 3","Sem. 4","Sem. 5","Sem. 6","Sem. 7","Sem. 8"];
+const dcn  = ["Med. 1","Med. 2","Med. 3","Med. 4","Med. 5"];
+
+const mockData: Record<string, Record<string, DataPoint>> = {
+  "palmar-direita":  { "15": gen([38,39,41,40,42,43,41.5,44], d15n), "30": gen([35,37,39,40,42,41,44], d30n), "60": gen([33,35,37,39,41,42,43,44.5], d60n), "custom": gen([36,38,39,41,43], dcn) },
+  "palmar-esquerda": { "15": gen([35,36,38,37,39,40,38.5,41], d15n), "30": gen([32,34,36,37,39,38,41], d30n), "60": gen([30,32,34,36,38,39,40,41.5], d60n), "custom": gen([33,35,36,38,40], dcn) },
+  // Pinça — Mão Direita
+  "pinca-direita-indicador": { "15": gen([7.5,7.8,8.0,8.1,8.4,8.3,8.5,8.8], d15n), "30": gen([7.0,7.5,7.8,8.2,8.4,8.7,9.0], d30n), "60": gen([6.5,6.8,7.1,7.5,7.9,8.2,8.5,8.9], d60n), "custom": gen([7.0,7.4,7.9,8.2,8.5], dcn) },
+  "pinca-direita-medio":     { "15": gen([6.8,7.0,7.2,7.4,7.6,7.5,7.7,8.0], d15n), "30": gen([6.3,6.8,7.1,7.5,7.7,8.0,8.3], d30n), "60": gen([5.8,6.1,6.4,6.8,7.2,7.5,7.8,8.2], d60n), "custom": gen([6.5,6.9,7.3,7.6,7.9], dcn) },
+  "pinca-direita-anelar":    { "15": gen([5.5,5.7,5.9,6.1,6.3,6.2,6.4,6.6], d15n), "30": gen([5.0,5.4,5.7,6.0,6.2,6.5,6.8], d30n), "60": gen([4.5,4.8,5.1,5.5,5.9,6.2,6.5,6.9], d60n), "custom": gen([5.2,5.6,6.0,6.3,6.6], dcn) },
+  "pinca-direita-minimo":    { "15": gen([4.2,4.4,4.6,4.7,4.9,4.8,5.0,5.2], d15n), "30": gen([3.8,4.1,4.4,4.7,4.9,5.1,5.4], d30n), "60": gen([3.5,3.8,4.1,4.4,4.7,5.0,5.3,5.6], d60n), "custom": gen([4.0,4.3,4.7,5.0,5.3], dcn) },
+  // Pinça — Mão Esquerda (valores ~8% menores)
+  "pinca-esquerda-indicador": { "15": gen([6.9,7.2,7.4,7.5,7.7,7.6,7.8,8.1], d15n), "30": gen([6.4,6.9,7.2,7.5,7.7,8.0,8.3], d30n), "60": gen([6.0,6.3,6.5,6.9,7.3,7.6,7.9,8.2], d60n), "custom": gen([6.5,6.8,7.3,7.6,7.9], dcn) },
+  "pinca-esquerda-medio":     { "15": gen([6.2,6.4,6.6,6.8,7.0,6.9,7.1,7.4], d15n), "30": gen([5.8,6.2,6.5,6.9,7.1,7.4,7.7], d30n), "60": gen([5.3,5.6,5.9,6.3,6.6,6.9,7.2,7.6], d60n), "custom": gen([6.0,6.3,6.7,7.0,7.3], dcn) },
+  "pinca-esquerda-anelar":    { "15": gen([5.0,5.2,5.4,5.6,5.8,5.7,5.9,6.1], d15n), "30": gen([4.6,4.9,5.2,5.5,5.7,6.0,6.3], d30n), "60": gen([4.1,4.4,4.7,5.0,5.4,5.7,6.0,6.4], d60n), "custom": gen([4.8,5.1,5.5,5.8,6.1], dcn) },
+  "pinca-esquerda-minimo":    { "15": gen([3.8,4.0,4.2,4.3,4.5,4.4,4.6,4.8], d15n), "30": gen([3.4,3.7,4.0,4.3,4.5,4.7,5.0], d30n), "60": gen([3.1,3.4,3.7,4.0,4.3,4.6,4.9,5.2], d60n), "custom": gen([3.6,3.9,4.3,4.6,4.9], dcn) },
 };
 
 const fullList = [
-  { date: "26/04", time: "14:32", type: "palmar", label: "Preensão", value: 42.5 },
-  { date: "25/04", time: "08:10", type: "pinca", label: "Pinça", value: 8.4 },
-  { date: "24/04", time: "19:40", type: "palmar", label: "Preensão", value: 41.8 },
-  { date: "23/04", time: "07:52", type: "palmar", label: "Preensão", value: 40.9 },
-  { date: "22/04", time: "09:15", type: "pinca", label: "Pinça", value: 8.1 },
-  { date: "20/04", time: "18:30", type: "pinca", label: "Pinça", value: 7.9 },
+  { date: "26/04", time: "14:32", type: "palmar", sub: "direita",   hand: "",        label: "Palmar Direita",             value: 42.5 },
+  { date: "26/04", time: "14:35", type: "palmar", sub: "esquerda",  hand: "",        label: "Palmar Esquerda",            value: 39.1 },
+  { date: "25/04", time: "08:10", type: "pinca",  sub: "indicador", hand: "direita", label: "Pinça Indicador (Dir.)",     value: 8.4 },
+  { date: "25/04", time: "08:12", type: "pinca",  sub: "indicador", hand: "esquerda",label: "Pinça Indicador (Esq.)",     value: 7.8 },
+  { date: "25/04", time: "08:14", type: "pinca",  sub: "medio",     hand: "direita", label: "Pinça Médio (Dir.)",         value: 7.6 },
+  { date: "24/04", time: "19:40", type: "palmar", sub: "direita",   hand: "",        label: "Palmar Direita",             value: 41.8 },
+  { date: "23/04", time: "07:52", type: "pinca",  sub: "anelar",    hand: "direita", label: "Pinça Anelar (Dir.)",        value: 6.3 },
+  { date: "22/04", time: "09:15", type: "pinca",  sub: "minimo",    hand: "esquerda",label: "Pinça Mínimo (Esq.)",        value: 4.7 },
+  { date: "20/04", time: "18:30", type: "pinca",  sub: "indicador", hand: "direita", label: "Pinça Indicador (Dir.)",     value: 7.9 },
 ];
 
 export function HistoryScreen() {
   const [type, setType] = useState<ForceType>("palmar");
+  const [palmarSub, setPalmarSub] = useState<PalmarSub>("direita");
+  const [pincaHand, setPincaHand] = useState<PincaHand>("direita");
+  const [pincaSub, setPincaSub] = useState<PincaSub>("indicador");
   const [range, setRange] = useState<"15" | "30" | "60" | "custom">("30");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -82,58 +85,304 @@ export function HistoryScreen() {
   const grid = theme === "dark" ? "#1F2A44" : "#E2E8F0";
   const tick = theme === "dark" ? "#94A3B8" : "#94A3B8";
   
-  // Cores dinâmicas para o tipo de força
   const accentColor = type === "palmar" ? "var(--brand-emerald)" : "var(--brand-cyan)";
   const accentSoft = type === "palmar" ? "var(--brand-emerald-soft)" : "var(--brand-cyan-soft)";
   
-  const currentData = mockData[type][range];
-  const list = fullList.filter(item => item.type === type);
+  const dataKey = type === "palmar" ? `palmar-${palmarSub}` : `pinca-${pincaHand}-${pincaSub}`;
+  const currentData = mockData[dataKey][range];
+  const list = type === "palmar"
+    ? fullList.filter(item => item.type === "palmar" && item.sub === palmarSub)
+    : fullList.filter(item => item.type === "pinca" && item.sub === pincaSub && item.hand === pincaHand);
   
-  // Calcular média dinamicamente
   const average = currentData.reduce((acc, curr) => acc + curr.v, 0) / currentData.length;
   
-  const typeLabel = type === "palmar" ? "Força Palmar" : "Força de Pinça";
+  const subLabel = type === "palmar"
+    ? (palmarSub === "direita" ? "Mão Direita" : "Mão Esquerda")
+    : `${PINCA_SUBS.find(s => s.key === pincaSub)!.label} (${pincaHand === "direita" ? "Dir." : "Esq."})`;
+  /* ── Dados do usuário (mock) ── */
+  const userInfo = {
+    nome: "Maria Silva",
+    idade: "28 anos",
+    genero: "Feminino",
+    maoDominante: "Direita",
+    peso: "62.00 kg",
+    altura: "168 cm",
+  };
+
+  /** Calcula cor baseada na diferença % entre dois valores */
+  function diffColor(a: number, b: number): { color: [number, number, number]; label: string } {
+    const max = Math.max(a, b);
+    if (max === 0) return { color: [0, 128, 0], label: "" };
+    const pct = Math.abs(a - b) / max * 100;
+    if (pct > 20) return { color: [220, 38, 38], label: `⚠ ${pct.toFixed(0)}% diferença` };
+    if (pct >= 10) return { color: [202, 138, 4], label: `${pct.toFixed(0)}% diferença` };
+    return { color: [0, 128, 0], label: "✓ Musculaturas equilibradas" };
+  }
+
+  /** Gera a logo DynaTech como imagem base64 via canvas */
+  function generateLogoBase64(): string {
+    const canvas = document.createElement("canvas");
+    canvas.width = 120;
+    canvas.height = 120;
+    const ctx = canvas.getContext("2d")!;
+    // Background rounded rect
+    ctx.fillStyle = "#0B2447";
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 120, 120, 20);
+    ctx.fill();
+    // Gradient overlay
+    const grad = ctx.createLinearGradient(0, 0, 120, 120);
+    grad.addColorStop(0, "#0B2447");
+    grad.addColorStop(1, "#19376D");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 120, 120, 20);
+    ctx.fill();
+    // Wave path
+    ctx.strokeStyle = "#10D9A0";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(15, 72);
+    ctx.quadraticCurveTo(30, 43, 45, 72);
+    ctx.quadraticCurveTo(60, 101, 75, 72);
+    ctx.quadraticCurveTo(90, 43, 105, 72);
+    ctx.stroke();
+    // Dot
+    ctx.fillStyle = "#10D9A0";
+    ctx.beginPath();
+    ctx.arc(60, 34, 7, 0, Math.PI * 2);
+    ctx.fill();
+    return canvas.toDataURL("image/png");
+  }
 
   async function exportToPDF() {
     try {
       const doc = new jsPDF();
-      
+      const pageW = doc.internal.pageSize.getWidth();
+
       let titleSuffix = `${range} dias`;
       let fileSuffix = `${range}dias`;
-      
       if (range === "custom") {
         const startStr = startDate ? startDate.split("-").reverse().join("/") : "Início";
         const endStr = endDate ? endDate.split("-").reverse().join("/") : "Fim";
         titleSuffix = `Personalizado (${startStr} a ${endStr})`;
-        fileSuffix = `Personalizado`;
+        fileSuffix = "Personalizado";
       }
-      
-      doc.text(`Relatório DynaTech - ${typeLabel} - ${titleSuffix}`, 14, 15);
-      
-      const tableData = currentData.map((d) => [d.name, d.v]);
-      
-      autoTable(doc, {
-        head: [['Período', 'Força (kgf)']],
-        body: tableData,
-        startY: 25,
-      });
 
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const reportType = type === "palmar" ? "Força Palmar" : "Força de Pinça";
+      const brandDark: [number, number, number] = [11, 36, 71];
+      const brandGreen: [number, number, number] = [16, 217, 160];
+
+      /* ═══ Header band ═══ */
+      doc.setFillColor(...brandDark);
+      doc.rect(0, 0, pageW, 38, "F");
+
+      const m = 10; // margem lateral
+
+      // Logo
+      const logoImg = generateLogoBase64();
+      doc.addImage(logoImg, "PNG", m, 5, 28, 28);
+
+      // Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text("Dyna Tech", m + 34, 17);
+      doc.setFontSize(9);
+      doc.setTextColor(160, 200, 230);
+      doc.text("Saúde e performance na sua mão", m + 34, 24);
+
+      // Report type badge
+      doc.setFontSize(10);
+      doc.setTextColor(...brandGreen);
+      doc.text(reportType, m + 34, 33);
+
+      // Date on right
+      doc.setFontSize(8);
+      doc.setTextColor(160, 200, 230);
+      const now = new Date();
+      doc.text(now.toLocaleDateString("pt-BR") + " " + now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), pageW - m, 17, { align: "right" });
+      doc.text(`Período: ${titleSuffix}`, pageW - m, 24, { align: "right" });
+
+      /* ═══ Green accent line ═══ */
+      doc.setDrawColor(...brandGreen);
+      doc.setLineWidth(1.2);
+      doc.line(0, 38, pageW, 38);
+
+      /* ═══ Patient info card ═══ */
+      const cardY = 44;
+      doc.setFillColor(245, 248, 252);
+      doc.roundedRect(m, cardY, pageW - m * 2, 28, 3, 3, "F");
+      doc.setDrawColor(220, 228, 240);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(m, cardY, pageW - m * 2, 28, 3, 3, "S");
+
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("DADOS DO PACIENTE", m + 4, cardY + 5);
+
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Nome: ${userInfo.nome}`, m + 4, cardY + 12);
+      doc.text(`Idade: ${userInfo.idade}`, m + 4, cardY + 18);
+      doc.text(`Gênero: ${userInfo.genero}`, m + 4, cardY + 24);
+
+      const col2X = pageW / 2;
+      doc.text(`Mão dominante: ${userInfo.maoDominante}`, col2X, cardY + 12);
+      doc.text(`Peso: ${userInfo.peso}`, col2X, cardY + 18);
+      doc.text(`Altura: ${userInfo.altura}`, col2X, cardY + 24);
+
+      let tableStartY = cardY + 34;
+
+      /* ═══ Table ═══ */
+      const headStyles = {
+        fillColor: brandDark,
+        textColor: [255, 255, 255] as [number, number, number],
+        fontSize: 9,
+        fontStyle: "bold" as const,
+        halign: "center" as const,
+      };
+      const bodyStyles = {
+        fontSize: 8.5,
+        halign: "center" as const,
+        cellPadding: 3,
+      };
+      const altRowColor: [number, number, number] = [245, 248, 252];
+      /* Coluna "Análise" com fonte menor para não vazar */
+      const analiseColStyle = { fontSize: 7, cellWidth: 'auto' as const };
+
+      if (type === "palmar") {
+        const dirData = mockData["palmar-direita"][range];
+        const esqData = mockData["palmar-esquerda"][range];
+        const len = Math.max(dirData.length, esqData.length);
+        const body: any[][] = [];
+        for (let i = 0; i < len; i++) {
+          const d = dirData[i]?.v ?? 0;
+          const e = esqData[i]?.v ?? 0;
+          const dc = diffColor(d, e);
+          const name = dirData[i]?.name ?? esqData[i]?.name ?? "";
+          body.push([name, d.toFixed(1), e.toFixed(1), dc.label]);
+        }
+        const avgD = dirData.reduce((s, p) => s + p.v, 0) / dirData.length;
+        const avgE = esqData.reduce((s, p) => s + p.v, 0) / esqData.length;
+        const avgDc = diffColor(avgD, avgE);
+        body.push(["MÉDIA", avgD.toFixed(1), avgE.toFixed(1), avgDc.label]);
+
+        autoTable(doc, {
+          head: [["Período", "Direita (kgf)", "Esquerda (kgf)", "Análise"]],
+          body,
+          startY: tableStartY,
+          margin: { left: m, right: m },
+          headStyles,
+          bodyStyles,
+          columnStyles: { 3: analiseColStyle },
+          alternateRowStyles: { fillColor: altRowColor },
+          didParseCell: (data: any) => {
+            if (data.section === "body" && data.row.index < len) {
+              const d = dirData[data.row.index]?.v ?? 0;
+              const e = esqData[data.row.index]?.v ?? 0;
+              const dc = diffColor(d, e);
+              if (data.column.index >= 1) data.cell.styles.textColor = dc.color;
+            }
+            if (data.section === "body" && data.row.index === len) {
+              data.cell.styles.fontStyle = "bold";
+              data.cell.styles.fillColor = [230, 240, 250];
+              if (data.column.index >= 1) data.cell.styles.textColor = avgDc.color;
+            }
+          },
+        });
+      } else {
+        /* Pinça: para cada dedo, comparar Direita vs Esquerda */
+        for (const finger of PINCA_SUBS) {
+          if (finger.key === "anelar") {
+            doc.addPage();
+            tableStartY = 20;
+          }
+
+          const dirData = mockData[`pinca-direita-${finger.key}`][range];
+          const esqData = mockData[`pinca-esquerda-${finger.key}`][range];
+          const len = Math.max(dirData.length, esqData.length);
+
+          // Section title
+          tableStartY += 4;
+          doc.setDrawColor(...brandGreen);
+          doc.setLineWidth(1.2);
+          doc.line(m, tableStartY - 4.5, m, tableStartY + 1.5);
+          
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...brandDark);
+          doc.text(`Dedo: ${finger.label.toUpperCase()}`, m + 3, tableStartY);
+          doc.setFont("helvetica", "normal");
+          tableStartY += 6;
+
+          const body: any[][] = [];
+          for (let i = 0; i < len; i++) {
+            const d = dirData[i]?.v ?? 0;
+            const e = esqData[i]?.v ?? 0;
+            const dc = diffColor(d, e);
+            const name = dirData[i]?.name ?? esqData[i]?.name ?? "";
+            body.push([name, d.toFixed(1), e.toFixed(1), dc.label]);
+          }
+          const avgD = dirData.reduce((s, p) => s + p.v, 0) / dirData.length;
+          const avgE = esqData.reduce((s, p) => s + p.v, 0) / esqData.length;
+          const avgDc = diffColor(avgD, avgE);
+          body.push(["MÉDIA", avgD.toFixed(1), avgE.toFixed(1), avgDc.label]);
+
+          autoTable(doc, {
+            head: [["Período", "Direita (kgf)", "Esquerda (kgf)", "Análise"]],
+            body,
+            startY: tableStartY,
+            margin: { left: m, right: m },
+            headStyles,
+            bodyStyles: { ...bodyStyles, fontSize: 7.5 },
+            columnStyles: { 3: analiseColStyle },
+            alternateRowStyles: { fillColor: altRowColor },
+            didParseCell: (data: any) => {
+              if (data.section === "body" && data.row.index < len) {
+                const d = dirData[data.row.index]?.v ?? 0;
+                const e = esqData[data.row.index]?.v ?? 0;
+                const dc = diffColor(d, e);
+                if (data.column.index >= 1) data.cell.styles.textColor = dc.color;
+              }
+              if (data.section === "body" && data.row.index === len) {
+                data.cell.styles.fontStyle = "bold";
+                data.cell.styles.fillColor = [230, 240, 250];
+                if (data.column.index >= 1) data.cell.styles.textColor = avgDc.color;
+              }
+            },
+          });
+
+          tableStartY = (doc as any).lastAutoTable?.finalY + 10 || tableStartY + 60;
+        }
+      }
+
+      /* ═══ Footer ═══ */
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setDrawColor(...brandGreen);
+      doc.setLineWidth(0.8);
+      doc.line(m, pageH - 16, pageW - m, pageH - 16);
+      doc.setFontSize(7);
+      doc.setTextColor(140, 150, 170);
+      doc.text("Relatório gerado automaticamente pelo app Dyna Tech", m, pageH - 10);
+      doc.text(`${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR")}`, pageW - m, pageH - 10, { align: "right" });
+
+      /* ═══ Legend ═══ */
+      const legendY = (doc as any).lastAutoTable?.finalY + 8 || tableStartY + 60;
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Legenda de cores:", m, legendY);
+      doc.setFillColor(220, 38, 38);  doc.circle(m + 2, legendY + 5, 1.5, "F"); doc.text("Vermelho: diferença > 20% — desbalanço significativo", m + 6, legendY + 6);
+      doc.setFillColor(202, 138, 4);   doc.circle(m + 2, legendY + 10, 1.5, "F"); doc.text("Amarelo: diferença entre 10% e 20% — atenção", m + 6, legendY + 11);
+      doc.setFillColor(0, 128, 0);     doc.circle(m + 2, legendY + 15, 1.5, "F"); doc.text("Verde: diferença < 10% — musculaturas equilibradas", m + 6, legendY + 16);
+
+      const pdfBase64 = doc.output("datauristring").split(",")[1];
       const typeStr = type === "palmar" ? "Palmar" : "Pinca";
       const fileName = `DynaTech_${typeStr}_${fileSuffix}.pdf`;
-      const savedFile = await Filesystem.writeFile({
-        path: fileName,
-        data: pdfBase64,
-        directory: Directory.Cache,
-      });
-
-      await Share.share({
-        title: 'Exportar Relatório PDF',
-        url: savedFile.uri,
-        dialogTitle: 'Salvar ou compartilhar relatório',
-      });
+      const savedFile = await Filesystem.writeFile({ path: fileName, data: pdfBase64, directory: Directory.Cache });
+      await Share.share({ title: "Exportar Relatório PDF", url: savedFile.uri, dialogTitle: "Salvar ou compartilhar relatório" });
     } catch (e) {
-      console.error('Erro ao exportar PDF', e);
+      console.error("Erro ao exportar PDF", e);
     }
   }
 
@@ -141,33 +390,70 @@ export function HistoryScreen() {
     try {
       let fileSuffix = `${range}dias`;
       let sheetName = `Histórico ${range} dias`;
-      
-      if (range === "custom") {
-        fileSuffix = `Personalizado`;
-        sheetName = `Personalizado`;
+      if (range === "custom") { fileSuffix = "Personalizado"; sheetName = "Personalizado"; }
+
+      /* Cabeçalho do usuário */
+      const header = [
+        ["Relatório DynaTech"],
+        [`Nome: ${userInfo.nome}`, `Idade: ${userInfo.idade}`, `Gênero: ${userInfo.genero}`],
+        [`Mão dominante: ${userInfo.maoDominante}`, `Peso: ${userInfo.peso}`, `Altura: ${userInfo.altura}`],
+        [],
+      ];
+
+      let rows: any[][];
+
+      if (type === "palmar") {
+        const dirData = mockData["palmar-direita"][range];
+        const esqData = mockData["palmar-esquerda"][range];
+        const len = Math.max(dirData.length, esqData.length);
+        rows = [["Período", "Direita (kgf)", "Esquerda (kgf)", "Análise"]];
+        for (let i = 0; i < len; i++) {
+          const d = dirData[i]?.v ?? 0;
+          const e = esqData[i]?.v ?? 0;
+          const dc = diffColor(d, e);
+          const name = dirData[i]?.name ?? esqData[i]?.name ?? "";
+          rows.push([name, d.toFixed(1), e.toFixed(1), dc.label]);
+        }
+        const avgD = dirData.reduce((s, p) => s + p.v, 0) / dirData.length;
+        const avgE = esqData.reduce((s, p) => s + p.v, 0) / esqData.length;
+        const avgDc = diffColor(avgD, avgE);
+        rows.push(["MÉDIA", avgD.toFixed(1), avgE.toFixed(1), avgDc.label]);
+      } else {
+        /* Pinça: para cada dedo, Direita vs Esquerda */
+        rows = [];
+        for (const finger of PINCA_SUBS) {
+          rows.push([`DEDO: ${finger.label.toUpperCase()}`]);
+          rows.push(["Período", "Direita (kgf)", "Esquerda (kgf)", "Análise"]);
+          const dirData = mockData[`pinca-direita-${finger.key}`][range];
+          const esqData = mockData[`pinca-esquerda-${finger.key}`][range];
+          const len = Math.max(dirData.length, esqData.length);
+          for (let i = 0; i < len; i++) {
+            const d = dirData[i]?.v ?? 0;
+            const e = esqData[i]?.v ?? 0;
+            const dc = diffColor(d, e);
+            const name = dirData[i]?.name ?? esqData[i]?.name ?? "";
+            rows.push([name, d.toFixed(1), e.toFixed(1), dc.label]);
+          }
+          const avgD = dirData.reduce((s, p) => s + p.v, 0) / dirData.length;
+          const avgE = esqData.reduce((s, p) => s + p.v, 0) / esqData.length;
+          const avgDc = diffColor(avgD, avgE);
+          rows.push(["MÉDIA", avgD.toFixed(1), avgE.toFixed(1), avgDc.label]);
+          rows.push([]);
+        }
       }
-      
-      const worksheetData = [['Período', 'Força (kgf)'], ...currentData.map(d => [d.name, d.v])];
+
+      const worksheetData = [...header, ...rows];
       const ws = XLSX.utils.aoa_to_sheet(worksheetData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-      const xlsxBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      const xlsxBase64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
       const typeStr = type === "palmar" ? "Palmar" : "Pinca";
       const fileName = `DynaTech_${typeStr}_${fileSuffix}.xlsx`;
-      const savedFile = await Filesystem.writeFile({
-        path: fileName,
-        data: xlsxBase64,
-        directory: Directory.Cache,
-      });
-
-      await Share.share({
-        title: 'Exportar Tabela XLSX',
-        url: savedFile.uri,
-        dialogTitle: 'Salvar ou compartilhar tabela',
-      });
+      const savedFile = await Filesystem.writeFile({ path: fileName, data: xlsxBase64, directory: Directory.Cache });
+      await Share.share({ title: "Exportar Tabela XLSX", url: savedFile.uri, dialogTitle: "Salvar ou compartilhar tabela" });
     } catch (e) {
-      console.error('Erro ao exportar XLSX', e);
+      console.error("Erro ao exportar XLSX", e);
     }
   }
 
@@ -208,7 +494,68 @@ export function HistoryScreen() {
           </button>
         </div>
 
-        {/* Período Toggle */}
+        {/* Sub-type chips */}
+        {type === "palmar" ? (
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+            {PALMAR_SUBS.map((s) => (
+              <button
+                key={s.key}
+                onClick={() => setPalmarSub(s.key)}
+                className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  background: palmarSub === s.key ? accentSoft : "var(--brand-chip-bg)",
+                  color: palmarSub === s.key ? accentColor : "var(--brand-text-muted)",
+                  border: palmarSub === s.key ? `1.5px solid ${accentColor}` : "1.5px solid transparent",
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Hand selector */}
+            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
+              {PINCA_HANDS.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setPincaHand(s.key)}
+                  className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: pincaHand === s.key ? accentSoft : "var(--brand-chip-bg)",
+                    color: pincaHand === s.key ? accentColor : "var(--brand-text-muted)",
+                    border: pincaHand === s.key ? `1.5px solid ${accentColor}` : "1.5px solid transparent",
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            {/* Finger selector */}
+            <div className="flex gap-2 mt-2 overflow-x-auto no-scrollbar pb-1">
+              {PINCA_SUBS.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setPincaSub(s.key)}
+                  className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: pincaSub === s.key ? "var(--brand-chip-bg)" : "transparent",
+                    color: pincaSub === s.key ? accentColor : "var(--brand-text-muted)",
+                    border: pincaSub === s.key ? `1.5px solid ${accentColor}` : "1.5px solid var(--brand-border-soft)",
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <div
           className="flex p-1 rounded-xl mt-4"
           style={{ background: "var(--brand-chip-bg)" }}

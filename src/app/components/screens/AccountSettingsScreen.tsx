@@ -1,4 +1,4 @@
-import { ChevronLeft, User, Scale, Ruler, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, User, Scale, Ruler, Mail, Lock, Eye, EyeOff, Hand } from "lucide-react";
 import { useState } from "react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -22,6 +22,7 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState("maria@email.com");
   const [peso, setPeso] = useState("62");
   const [altura, setAltura] = useState("168");
+  const [maoDominante, setMaoDominante] = useState("Direita");
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
 
@@ -30,8 +31,9 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
   const pwChecks = validatePassword(newPwd);
   const pesoOk = peso.length > 0;
   const alturaOk = altura.length > 0;
+  const maoOk = maoDominante !== "Selecione";
 
-  const formValid = nameOk && emailOk && pwChecks.valid && pesoOk && alturaOk;
+  const formValid = nameOk && emailOk && pwChecks.valid && pesoOk && alturaOk && maoOk;
 
   const inputStyle: React.CSSProperties = {
     background: "var(--brand-input-bg)",
@@ -141,6 +143,23 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
                   style={!alturaOk ? errorInputStyle : inputStyle}
                 />
               </div>
+            </div>
+        </div>
+
+        <div>
+            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Mão dominante</label>
+            <div className="relative mt-1.5">
+              <Hand size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
+              <select
+                value={maoDominante}
+                onChange={(e) => setMaoDominante(e.target.value)}
+                className="w-full h-12 pl-11 pr-4 rounded-xl outline-none appearance-none transition-colors"
+                style={inputStyle}
+              >
+                <option>Direita</option>
+                <option>Esquerda</option>
+                <option>Ambidestro</option>
+              </select>
             </div>
         </div>
 
