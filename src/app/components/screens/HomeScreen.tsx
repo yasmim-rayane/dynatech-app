@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Hand, Zap, Bluetooth, Bell, Plus, HelpCircle, X, ShieldCheck } from "lucide-react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export function HomeScreen({
   onOpenNotifications,
@@ -9,6 +11,7 @@ export function HomeScreen({
   onStartMeasurement: () => void;
 }) {
   const [showHealthyInfo, setShowHealthyInfo] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <div
@@ -200,52 +203,55 @@ export function HomeScreen({
       </div>
 
       {/* Modal / Bottom Sheet - Explicação Medição Saudável */}
-      {showHealthyInfo && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-          {/* Overlay */}
-          <div 
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowHealthyInfo(false)}
-          />
-          
-          {/* Sheet */}
-          <div 
-            className="relative w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp sm:animate-scaleIn"
-            style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)" }}
-          >
-            <button 
+      {showHealthyInfo && typeof document !== "undefined" && createPortal(
+        <div className={theme === "dark" ? "dark" : ""}>
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center" style={{ zIndex: 9999 }}>
+            {/* Overlay */}
+            <div 
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
               onClick={() => setShowHealthyInfo(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              style={{ background: "var(--brand-chip-bg)" }}
-            >
-              <X size={18} style={{ color: "var(--brand-text)" }} />
-            </button>
+            />
             
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--brand-emerald-soft)" }}>
-              <ShieldCheck size={24} style={{ color: "var(--brand-emerald)" }} />
+            {/* Sheet */}
+            <div 
+              className="relative w-full sm:w-[400px] max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 pb-8 animate-slideUp sm:animate-scaleIn"
+              style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)" }}
+            >
+              <button 
+                onClick={() => setShowHealthyInfo(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+                style={{ background: "var(--brand-chip-bg)" }}
+              >
+                <X size={18} style={{ color: "var(--brand-text)" }} />
+              </button>
+              
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--brand-emerald-soft)" }}>
+                <ShieldCheck size={24} style={{ color: "var(--brand-emerald)" }} />
+              </div>
+              
+              <h2 style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }} className="mb-2">
+                Medição Saudável
+              </h2>
+              
+              <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }} className="mb-4">
+                Os valores de referência (Alvo) apresentados no aplicativo são calculados com base em sua <strong>idade</strong>, <strong>peso</strong>, <strong>altura</strong> e <strong>gênero</strong>.
+              </p>
+              
+              <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }}>
+                Eles refletem médias normativas validadas por estudos científicos e são amplamente utilizados na medicina esportiva e na fisioterapia para diagnosticar força muscular e detectar compensações e desbalanços.
+              </p>
+              
+              <button 
+                onClick={() => setShowHealthyInfo(false)}
+                className="w-full mt-6 py-3.5 rounded-xl text-white font-semibold text-[15px] active:scale-95 transition-transform shadow-md"
+                style={{ background: "var(--brand-accent-grad)" }}
+              >
+                Entendi
+              </button>
             </div>
-            
-            <h2 style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }} className="mb-2">
-              Medição Saudável
-            </h2>
-            
-            <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }} className="mb-4">
-              Os valores de referência (Alvo) apresentados no aplicativo são calculados com base em sua <strong>idade</strong>, <strong>peso</strong>, <strong>altura</strong> e <strong>gênero</strong>.
-            </p>
-            
-            <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }}>
-              Eles refletem médias normativas validadas por estudos científicos e são amplamente utilizados na medicina esportiva e na fisioterapia para diagnosticar força muscular e detectar compensações e desbalanços.
-            </p>
-            
-            <button 
-              onClick={() => setShowHealthyInfo(false)}
-              className="w-full mt-6 py-3.5 rounded-xl text-white font-semibold text-[15px] active:scale-95 transition-transform shadow-md"
-              style={{ background: "var(--brand-accent-grad)" }}
-            >
-              Entendi
-            </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
