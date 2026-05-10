@@ -1,4 +1,5 @@
-import { Hand, Zap, Bluetooth, Bell, Plus } from "lucide-react";
+import { useState } from "react";
+import { Hand, Zap, Bluetooth, Bell, Plus, HelpCircle, X, ShieldCheck } from "lucide-react";
 
 export function HomeScreen({
   onOpenNotifications,
@@ -7,6 +8,8 @@ export function HomeScreen({
   onOpenNotifications: () => void;
   onStartMeasurement: () => void;
 }) {
+  const [showHealthyInfo, setShowHealthyInfo] = useState(false);
+
   return (
     <div
       className="min-h-full w-full"
@@ -88,6 +91,46 @@ export function HomeScreen({
           </div>
         </div>
 
+        {/* Medição Saudável */}
+        <div className="rounded-2xl p-4 shadow-md animate-fadeSlideUp" style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)", animationDelay: "0.25s" }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--brand-emerald-soft)" }}>
+                <ShieldCheck size={18} style={{ color: "var(--brand-emerald)" }} />
+              </div>
+              <div>
+                <div style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>Medição Saudável</div>
+                <div style={{ color: "var(--brand-text-faint)", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>PALMAR DIR.</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowHealthyInfo(true)}
+              className="w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ background: "var(--brand-chip-bg)" }}
+            >
+              <HelpCircle size={16} style={{ color: "var(--brand-text-muted)" }} />
+            </button>
+          </div>
+          
+          <div className="flex items-center justify-between px-2 pt-1">
+            <div className="text-center">
+              <div style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700 }}>42.5 <span style={{ fontSize: 12, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+              <div style={{ color: "var(--brand-emerald)", fontSize: 12, fontWeight: 600 }}>Você</div>
+            </div>
+            
+            <div className="flex-1 flex items-center px-4">
+              <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--brand-chip-bg)" }}>
+                <div className="h-full rounded-full" style={{ background: "var(--brand-emerald)", width: "85%" }} />
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700 }}>50.0 <span style={{ fontSize: 12, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+              <div style={{ color: "var(--brand-text-muted)", fontSize: 12, fontWeight: 600 }}>Alvo</div>
+            </div>
+          </div>
+        </div>
+
         <div className="animate-fadeSlideUp" style={{ animationDelay: "0.3s" }}>
           <button onClick={onStartMeasurement} className="w-full rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.97] transition-transform" style={{ height: 56, background: "var(--brand-accent-grad)", color: "#FFFFFF", fontSize: 15, fontWeight: 600 }}>
             <Plus size={20} />
@@ -155,6 +198,55 @@ export function HomeScreen({
           </div>
         </div>
       </div>
+
+      {/* Modal / Bottom Sheet - Explicação Medição Saudável */}
+      {showHealthyInfo && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowHealthyInfo(false)}
+          />
+          
+          {/* Sheet */}
+          <div 
+            className="relative w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp sm:animate-scaleIn"
+            style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)" }}
+          >
+            <button 
+              onClick={() => setShowHealthyInfo(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ background: "var(--brand-chip-bg)" }}
+            >
+              <X size={18} style={{ color: "var(--brand-text)" }} />
+            </button>
+            
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "var(--brand-emerald-soft)" }}>
+              <ShieldCheck size={24} style={{ color: "var(--brand-emerald)" }} />
+            </div>
+            
+            <h2 style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }} className="mb-2">
+              Medição Saudável
+            </h2>
+            
+            <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }} className="mb-4">
+              Os valores de referência (Alvo) apresentados no aplicativo são calculados com base em sua <strong>idade</strong>, <strong>peso</strong>, <strong>altura</strong> e <strong>gênero</strong>.
+            </p>
+            
+            <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }}>
+              Eles refletem médias normativas validadas por estudos científicos e são amplamente utilizados na medicina esportiva e na fisioterapia para diagnosticar força muscular e detectar compensações e desbalanços.
+            </p>
+            
+            <button 
+              onClick={() => setShowHealthyInfo(false)}
+              className="w-full mt-6 py-3.5 rounded-xl text-white font-semibold text-[15px] active:scale-95 transition-transform shadow-md"
+              style={{ background: "var(--brand-accent-grad)" }}
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
