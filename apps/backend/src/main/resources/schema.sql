@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `peso` DECIMAL(5,2) NOT NULL,
   `genero` ENUM('m', 'f', 'ou', 'pn') NOT NULL,
   `altura` SMALLINT(3) NOT NULL,
-  `maoDominante` ENUM('d','e') NOT NULL,
+  `maoDominante` ENUM('d','e','a') NOT NULL,
   `inativo` ENUM('s') NULL,
   `dataExclusao` DATETIME NULL,
   PRIMARY KEY (`id`)
