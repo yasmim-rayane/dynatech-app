@@ -703,9 +703,10 @@ function ResultStep({
               let dominantSideMatched = false;
 
               // Identificar se a mão medida é a dominante
-              const maoDomStr = user?.maoDominante?.toLowerCase() || "";
-              if ((maoDomStr.includes("destro") && side === "right") || 
-                  (maoDomStr.includes("canhoto") && side === "left")) {
+              const maoDom = user?.maoDominante?.toLowerCase() || "";
+              if (maoDom === "a" ||
+                  (maoDom === "d" && side === "right") || 
+                  (maoDom === "e" && side === "left")) {
                 dominantSideMatched = true;
               }
 
