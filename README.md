@@ -20,27 +20,63 @@ Apesar de estar em fase de desenvolvimento contínuo, o aplicativo já conta com
 - **Segurança e Validação:** Formulários de cadastro e perfil com validações de e-mail e regras de senhas fortes.
 
 ## Tecnologias Utilizadas
-- **Frontend Core:** React, TypeScript, Tailwind CSS.
-- **Ícones e UI:** Lucide React, Shadcn/Radix UI (Adaptado).
-- **Mobile Bridge:** Capacitor JS.
-- **Integração com Hardware:**
-  - `@capacitor/local-notifications`
-  - `@capacitor/haptics`
-  - `@capacitor-community/bluetooth-le`
-- **Build Tool:** Vite
+
+### Frontend (Mobile & Web)
+- **Core:** React 18, TypeScript, Tailwind CSS (via `@tailwindcss/vite` e `tw-animate-css`).
+- **Gerenciamento de Estado:** React Context API (para Autenticação, Notificações, Tema e Preferências).
+- **Ícones e UI:** Lucide React.
+- **Visualização de Dados:** Recharts (Gráficos do histórico de medições).
+- **Exportação de Relatórios:** `jspdf` e `jspdf-autotable` para PDF; `xlsx` para planilhas.
+- **Mobile Bridge:** Capacitor JS (v8) para acesso nativo.
+- **Integrações Nativas (Plugins Capacitor):**
+  - `@capacitor-community/bluetooth-le` (Comunicação BLE)
+  - `@capacitor/local-notifications` (Sistema de Lembretes)
+  - `@capacitor/haptics` (Feedback tátil)
+  - `@capacitor/filesystem` & `@capacitor/share` (Salvar e compartilhar relatórios)
+- **Áudio Nativo:** Web Audio API (Feedback sonoro dinâmico).
+- **Build Tool:** Vite.
+
+### Backend & API
+- **Linguagem:** Java 25
+- **Framework:** Spring Boot 4.x
+- **Persistência de Dados:** Spring Data JPA
+- **Segurança & Autenticação:** Spring Security Crypto
+- **Email:** Spring Boot Starter Mail
+- **Gerenciador de Dependências:** Maven
+
+### Banco de Dados & Infraestrutura
+- **Banco de Dados Relacional:** MySQL 8.0
+- **Containerização:** Docker e Docker Compose
 
 ## Como Executar
 
 ### Pré-requisitos
-- Node.js
-- Android Studio (para rodar no smartphone)
+- Node.js (para o Frontend)
+- Java (para o Backend)
+- Docker e Docker Compose (para rodar o MySQL)
+- Android Studio (para rodar o app no smartphone)
 
-### Rodando na Web (Ambiente de Testes)
+### 1. Subindo o Banco de Dados (MySQL)
+No diretório raiz do projeto, execute:
 ```bash
-# 1. Instale todas as dependências
+docker-compose up -d
+```
+Isso iniciará um container MySQL rodando na porta `3306` com a base `dynatech_db`.
+
+### 2. Rodando o Backend (API)
+```bash
+cd apps/backend
+./mvnw spring-boot:run
+```
+
+### 3. Rodando o Frontend (Web / Ambiente de Testes)
+```bash
+cd apps/mobile
+
+# Instale todas as dependências
 npm install
 
-# 2. Inicie o servidor de desenvolvimento
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
@@ -55,4 +91,4 @@ npm run build:android
 4. Clique no botão verde **Run (▶️)** no topo do Android Studio.
 
 ## Autoria
-Desenvolvido por **Yasmim Rayane** para a disciplina de Tópicos de Engenharia Biomédica - Engenharia da Computação (3º Semestre).
+Desenvolvido por **Yasmim Rayane** e **Marcelo Watanabe** para a disciplina de Tópicos de Engenharia Biomédica - Engenharia da Computação (3º Semestre).
