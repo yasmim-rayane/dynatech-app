@@ -19,4 +19,7 @@ export const BLE_CONFIG = {
   // Characteristic para receber o Status (Notificação/Leitura) 
   // "0" = Idle, "1" = Medindo
   CHAR_STATUS_UUID: 'f24b2f29-2d3b-4ab2-8e3d-71b315264b97',
+
+  // Characteristic para enviar leitura contínua (Notificação) em tempo real
+  CHAR_LIVE_UUID: 'b2a1a8c3-f6d2-43d9-93b5-3d5f1d48ab11',
 };

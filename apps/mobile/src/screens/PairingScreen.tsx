@@ -1,6 +1,10 @@
-import { Bluetooth, Check, ChevronLeft } from "lucide-react";
+import { Bluetooth, Check, ChevronLeft, Loader2 } from "lucide-react";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { usePreferences } from "../contexts/PreferencesContext";
+import { useAppNotifications } from "../contexts/NotificationsContext";
+import { useState, useEffect } from "react";
+import { BleService } from "../services/ble/BleService";
+import type { BleDevice } from "@capacitor-community/bluetooth-le";
 
 function playPairingFeedback(soundOn: boolean, vibrationOn: boolean) {
   // Vibração dupla (via Capacitor)
@@ -52,14 +56,69 @@ export function PairingScreen({
   onBack?: () => void;
 }) {
   const { sound, vibration } = usePreferences();
-  const devices = [
-    { name: "Dyna Tech Grip", id: "DT-A21F", strength: "Forte" },
-    { name: "Dyna Tech Grip", id: "DT-7C13", strength: "Médio" },
-  ];
+  const [devices, setDevices] = useState<{ device: BleDevice; rssi: number }[]>([]);
+  const [connectingTo, setConnectingTo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isBluetoothOn, setIsBluetoothOn] = useState<boolean>(true);
+  const { addNotification } = useAppNotifications();
 
-  function handleConnect() {
-    playPairingFeedback(sound, vibration);
-    onConnect();
+  useEffect(() => {
+    let isScanning = false;
+    
+    const scan = async () => {
+      try {
+        const enabled = await BleService.isBluetoothEnabled();
+        setIsBluetoothOn(enabled);
+        if (!enabled) {
+          setError("O Bluetooth está desativado. Por favor, ative nas configurações do celular.");
+          return;
+        }
+
+        await BleService.startScan((device, rssi) => {
+          setDevices((prev) => {
+            const exists = prev.find((d) => d.device.deviceId === device.deviceId);
+            if (exists) {
+              return prev.map((d) =>
+                d.device.deviceId === device.deviceId ? { ...d, rssi } : d
+              );
+            }
+            return [...prev, { device, rssi }];
+          });
+        });
+        isScanning = true;
+      } catch (e: any) {
+        setError("Erro ao iniciar busca Bluetooth: " + e.message);
+      }
+    };
+
+    scan();
+
+    return () => {
+      if (isScanning) {
+        BleService.stopScan();
+      }
+    };
+  }, [isBluetoothOn]); // Refaz o scan se a flag for alterada por um botão de retry
+
+  async function handleConnect(device: BleDevice) {
+    if (connectingTo) return;
+    setConnectingTo(device.deviceId);
+    setError(null);
+    try {
+      await BleService.stopScan();
+      await BleService.connectToDevice(device);
+      playPairingFeedback(sound, vibration);
+      addNotification({
+        title: "Dispositivo conectado",
+        body: `${device.name || "Dyna Tech Grip"} foi pareado com sucesso.`,
+        tone: "navy",
+        icon: "bluetooth",
+      });
+      onConnect();
+    } catch (e: any) {
+      setError("Falha ao conectar: " + e.message);
+      setConnectingTo(null);
+    }
   }
 
   return (
@@ -119,17 +178,43 @@ export function PairingScreen({
       <div className="flex items-center gap-2 mb-3">
         <span
           className="inline-block w-2 h-2 rounded-full"
-          style={{ background: "var(--brand-emerald)", animation: "ping 1.5s infinite" }}
+          style={{ background: isBluetoothOn ? "var(--brand-emerald)" : "var(--brand-danger, #EF4444)", animation: isBluetoothOn ? "ping 1.5s infinite" : "none" }}
         />
         <span style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-          Buscando dispositivos próximos…
+          {!isBluetoothOn 
+            ? "Bluetooth desligado" 
+            : devices.length === 0 
+              ? "Buscando dinamômetros próximos…" 
+              : `${devices.length} dispositivo(s) encontrado(s)`}
         </span>
       </div>
 
+      {error && (
+        <div className="mb-4 p-4 rounded-lg flex flex-col items-center text-center font-medium shadow-sm" style={{ background: "var(--brand-danger-soft, rgba(239,68,68,0.1))", color: "var(--brand-danger)" }}>
+          <span className="text-sm">{error}</span>
+          {!isBluetoothOn && (
+            <button
+              onClick={() => {
+                setError(null);
+                setIsBluetoothOn(true); // Força um re-render que acionará o useEffect para checar novamente
+              }}
+              className="mt-3 px-4 py-2 rounded-lg text-sm font-semibold active:scale-95 transition-transform"
+              style={{ background: "var(--brand-danger)", color: "#FFFFFF" }}
+            >
+              Já ativei (Tentar novamente)
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-3">
-        {devices.map((d, i) => (
-          <div
-            key={d.id}
+        {devices.map((d, i) => {
+          const isConnecting = connectingTo === d.device.deviceId;
+          const strength = d.rssi > -60 ? "Forte" : d.rssi > -80 ? "Médio" : "Fraco";
+          
+          return (
+            <div
+              key={d.device.deviceId}
             className="rounded-2xl p-4 flex items-center gap-3 shadow-sm animate-fadeSlideUp"
             style={{
               background: "var(--brand-card)",
@@ -145,33 +230,29 @@ export function PairingScreen({
             </div>
             <div className="flex-1">
               <div style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>
-                {d.name}
+                {d.device.name || "Dispositivo Desconhecido"}
               </div>
               <div style={{ color: "var(--brand-text-faint)", fontSize: 12 }}>
-                ID: {d.id} · Sinal {d.strength}
+                ID: {d.device.deviceId.slice(0,8)}... · Sinal {strength} ({d.rssi} dBm)
               </div>
             </div>
             <button
-              onClick={handleConnect}
-              className="rounded-lg px-4 py-2 active:scale-95 transition-transform"
+              onClick={() => handleConnect(d.device)}
+              disabled={connectingTo !== null}
+              className="rounded-lg px-4 py-2 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
               style={{
-                background: i === 0 ? "var(--brand-emerald)" : "transparent",
-                color: i === 0 ? "#FFFFFF" : "var(--brand-emerald)",
-                border: i === 0 ? "none" : "1.5px solid var(--brand-emerald)",
+                background: "transparent",
+                color: "var(--brand-emerald)",
+                border: "1.5px solid var(--brand-emerald)",
                 fontSize: 13,
                 fontWeight: 600,
               }}
             >
-              {i === 0 ? (
-                <span className="flex items-center gap-1">
-                  <Check size={14} /> Conectar
-                </span>
-              ) : (
-                "Conectar"
-              )}
+              {isConnecting ? <Loader2 size={16} className="animate-spin" /> : "Conectar"}
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

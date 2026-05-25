@@ -8,8 +8,8 @@
 // ==========================================
 // CONFIGURAÇÕES DE PINOS DO HX711
 // ==========================================
-const int HX711_DOUT = 21; // Pino de dados do HX711
-const int HX711_SCK = 22;  // Pino de clock do HX711
+const int HX711_DOUT = 17; // Pino de dados do HX711
+const int HX711_SCK = 16;  // Pino de clock do HX711
 
 HX711 scale;
 
@@ -25,10 +25,12 @@ float CALIBRATION_FACTOR = 420.0;
 #define CHAR_START_UUID        "beb5483e-36e1-4688-b7f5-ea07361b26a8" // Para o app enviar comando de START
 #define CHAR_RESULT_UUID       "8a21136d-14a9-4672-886b-56832db7d519" // Para o ESP32 notificar o pico máximo
 #define CHAR_STATUS_UUID       "f24b2f29-2d3b-4ab2-8e3d-71b315264b97" // Para o ESP32 notificar status (0=Idle, 1=Measuring)
+#define CHAR_LIVE_UUID         "b2a1a8c3-f6d2-43d9-93b5-3d5f1d48ab11" // Para envio contínuo em tempo real
 
 BLEServer* pServer = NULL;
 BLECharacteristic* pCharResult = NULL;
 BLECharacteristic* pCharStatus = NULL;
+BLECharacteristic* pCharLive = NULL;
 bool deviceConnected = false;
 
 // ==========================================
@@ -36,6 +38,7 @@ bool deviceConnected = false;
 // ==========================================
 bool isMeasuring = false;
 unsigned long measurementStartTime = 0;
+unsigned long lastLiveUpdate = 0;
 const unsigned long MEASUREMENT_DURATION_MS = 5000; // 5 segundos
 float maxForceDetected = 0.0;
 
@@ -58,7 +61,7 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class StartMeasurementCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string rxValue = pCharacteristic->getValue();
+      String rxValue = pCharacteristic->getValue();
 
       if (rxValue.length() > 0) {
         // Se receber o comando "1" e não estiver medindo, inicia o teste
@@ -67,6 +70,7 @@ class StartMeasurementCallbacks: public BLECharacteristicCallbacks {
           isMeasuring = true;
           maxForceDetected = 0.0;
           measurementStartTime = millis();
+          lastLiveUpdate = millis();
           
           // Tara a balança no início da medição para ignorar peso da própria mão/aparelho
           scale.tare();
@@ -128,6 +132,13 @@ void setup() {
   pCharStatus->addDescriptor(new BLE2902());
   pCharStatus->setValue("0"); // Inicia como Idle
 
+  // Characteristic: LIVE (NOTIFY)
+  pCharLive = pService->createCharacteristic(
+                      CHAR_LIVE_UUID,
+                      BLECharacteristic::PROPERTY_NOTIFY
+                    );
+  pCharLive->addDescriptor(new BLE2902());
+
   // Inicia o serviço
   pService->start();
 
@@ -162,6 +173,15 @@ void loop() {
         // Atualiza o pico máximo
         if (currentForce > maxForceDetected) {
           maxForceDetected = currentForce;
+        }
+
+        // Live Update via notify (a cada 100ms)
+        if (currentTime - lastLiveUpdate >= 100) {
+          lastLiveUpdate = currentTime;
+          char liveStr[10];
+          dtostrf(currentForce, 1, 2, liveStr);
+          pCharLive->setValue(liveStr);
+          pCharLive->notify();
         }
 
         // Print opcional para debug na serial

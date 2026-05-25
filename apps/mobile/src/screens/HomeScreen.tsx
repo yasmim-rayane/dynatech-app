@@ -3,27 +3,56 @@ import { createPortal } from "react-dom";
 import { Hand, Zap, Bluetooth, Bell, Plus, HelpCircle, X, ShieldCheck } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useAppNotifications } from "../contexts/NotificationsContext";
 import * as api from "../services/api";
 import type { ResultResponse, WeeklyStatsResponse } from "../services/api";
+import { BleService } from "../services/ble/BleService";
 
 export function HomeScreen({
   onOpenNotifications,
   onStartMeasurement,
+  onOpenPairing,
 }: {
   onOpenNotifications: () => void;
   onStartMeasurement: () => void;
+  onOpenPairing: () => void;
 }) {
   const [showHealthyInfo, setShowHealthyInfo] = useState(false);
   const { theme } = useTheme();
   const { user, email } = useAuth();
   const [lastResult, setLastResult] = useState<ResultResponse | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStatsResponse | null>(null);
+  const [weeklyResults, setWeeklyResults] = useState<ResultResponse[]>([]);
+  const [connected, setConnected] = useState(BleService.isConnected());
+  const { unreadCount } = useAppNotifications();
+
+  useEffect(() => {
+    BleService.onConnectionStateChange((state) => {
+      setConnected(state);
+    });
+  }, []);
 
   useEffect(() => {
     if (!email) return;
     api.getLastResults(email, 1).then(r => { if (r.length > 0) setLastResult(r[0]); }).catch(() => {});
     api.getWeeklyStats(email, 1).then(s => { if (s.length > 0) setWeeklyStats(s[0]); }).catch(() => {});
+
+    // Busca resultados da última semana para contagem individual por campo
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
+    api.getDateRangeResults(email, fmt(weekAgo), fmt(now))
+      .then(setWeeklyResults)
+      .catch(() => setWeeklyResults([]));
   }, [email]);
+
+  /** Conta quantos resultados da semana tiveram um campo específico > 0 */
+  function countSessions(field: keyof ResultResponse): number {
+    return weeklyResults.filter(r => {
+      const v = r[field] as number | null;
+      return v != null && v > 0;
+    }).length;
+  }
 
   const userName = user?.name ?? "Usuário";
   const firstName = userName.split(" ")[0];
@@ -31,6 +60,55 @@ export function HomeScreen({
   // Hora do dia para saudação
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+
+  /**
+   * Tabela normativa de força de preensão palmar (kgf) — dinamômetro Jamar.
+   * Fontes:
+   *   • Bohannon et al. (2006) — meta-análise descritiva (EUA, Austrália, Canadá, Ucrânia, Suécia)
+   *   • Caporrino et al. (1998) — população brasileira
+   *   • Hogrel (2015) — PMC4460675 — dados normativos 5–80 anos
+   * Cada entrada: [idadeMínima, mãoDireitaHomem, mãoEsquerdaHomem, mãoDireitaMulher, mãoEsquerdaMulher]
+   */
+  const GRIP_NORMS: [number, number, number, number, number][] = [
+    //  idade   H_dir  H_esq  M_dir  M_esq
+    [  20,      47.0,  43.2,  28.2,  25.6 ],
+    [  25,      47.1,  44.0,  28.9,  26.4 ],
+    [  30,      47.1,  44.6,  28.7,  26.0 ],
+    [  35,      47.1,  44.6,  28.3,  25.7 ],
+    [  40,      45.3,  43.5,  27.2,  25.3 ],
+    [  45,      43.3,  41.0,  26.2,  24.1 ],
+    [  50,      42.5,  40.0,  25.1,  22.5 ],
+    [  55,      40.0,  37.0,  23.5,  20.8 ],
+    [  60,      36.8,  34.7,  22.5,  20.0 ],
+    [  65,      34.7,  32.6,  20.3,  18.0 ],
+    [  70,      31.5,  28.4,  18.4,  16.2 ],
+    [  75,      25.6,  22.4,  15.4,  13.3 ],
+  ];
+
+  function getGripReference(side: "right" | "left"): number {
+    // Calcula idade
+    let age = 30; // fallback
+    if (user?.dataNascimento) {
+      const [y, m, d] = user.dataNascimento.split("-").map(Number);
+      const birth = new Date(y, m - 1, d);
+      age = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    }
+    // Gênero: "m" = masculino, qualquer outro = feminino (para referência conservadora)
+    const isMale = user?.genero === "m";
+
+    // Encontra a faixa etária mais próxima
+    let row = GRIP_NORMS[0];
+    for (const r of GRIP_NORMS) {
+      if (age >= r[0]) row = r;
+      else break;
+    }
+
+    if (isMale) return side === "right" ? row[1] : row[2];
+    return side === "right" ? row[3] : row[4];
+  }
+
+  const targetGripD = getGripReference("right");
+  const targetGripE = getGripReference("left");
 
   // Dados da última medição (com fallback)
   const palmD = lastResult?.palmMaxD;
@@ -67,20 +145,33 @@ export function HomeScreen({
             style={{ background: "var(--brand-on-header-chip)" }}
           >
             <Bell size={18} style={{ color: "var(--brand-on-header)" }} />
-            <span
-              className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulseGlow"
-              style={{ background: "var(--brand-emerald)" }}
-            />
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-1.5 right-1.5 w-4 h-4 flex items-center justify-center rounded-full animate-pulseGlow"
+                style={{ 
+                  background: "var(--brand-danger, #ef4444)", 
+                  color: "#fff", 
+                  fontSize: 10, 
+                  fontWeight: 700 
+                }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
 
         <div
-          className="mt-5 flex items-center gap-2 rounded-full px-3 py-2 w-fit animate-fadeIn"
-          style={{ background: "var(--brand-emerald-soft)", animationDelay: "0.2s" }}
+          onClick={connected ? undefined : onOpenPairing}
+          className={`mt-5 flex items-center gap-2 rounded-full px-3 py-2 w-fit animate-fadeIn ${!connected ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+          style={{ 
+            background: connected ? "var(--brand-emerald-soft)" : "var(--brand-danger-soft, rgba(239,68,68,0.15))", 
+            animationDelay: "0.2s" 
+          }}
         >
-          <Bluetooth size={14} style={{ color: "var(--brand-emerald)" }} />
-          <span style={{ color: "var(--brand-emerald)", fontSize: 12, fontWeight: 600 }}>
-            Dyna Tech Grip · Conectado
+          <Bluetooth size={14} style={{ color: connected ? "var(--brand-emerald)" : "var(--brand-danger, #ef4444)" }} />
+          <span style={{ color: connected ? "var(--brand-emerald)" : "var(--brand-danger, #ef4444)", fontSize: 12, fontWeight: 600 }}>
+            {connected ? "Dyna Tech Grip · Conectado" : "Desconectado · Toque para parear"}
           </span>
         </div>
       </div>
@@ -126,7 +217,7 @@ export function HomeScreen({
               </div>
               <div>
                 <div style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>Medição Saudável</div>
-                <div style={{ color: "var(--brand-text-faint)", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>PALMAR DIR.</div>
+                <div style={{ color: "var(--brand-text-faint)", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>PREENSÃO PALMAR</div>
               </div>
             </div>
             <button
@@ -138,21 +229,43 @@ export function HomeScreen({
             </button>
           </div>
           
-          <div className="flex items-center justify-between px-2 pt-1">
-            <div className="text-center">
-              <div style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700 }}>{palmD != null ? palmD.toFixed(1) : "--"} <span style={{ fontSize: 12, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
-              <div style={{ color: "var(--brand-emerald)", fontSize: 12, fontWeight: 600 }}>Você</div>
-            </div>
-            
-            <div className="flex-1 flex items-center px-4">
-              <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--brand-chip-bg)" }}>
-                <div className="h-full rounded-full" style={{ background: "var(--brand-emerald)", width: palmD != null ? `${Math.min(100, (palmD / 50) * 100)}%` : "0%" }} />
+          {/* Mão Direita */}
+          <div className="rounded-xl p-3 mb-2" style={{ background: "var(--brand-chip-bg)" }}>
+            <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>Mão Direita</div>
+            <div className="flex items-center justify-between">
+              <div className="text-center">
+                <div style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700 }}>{palmD != null && palmD > 0 ? palmD.toFixed(1) : "--"} <span style={{ fontSize: 11, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+                <div style={{ color: "var(--brand-emerald)", fontSize: 11, fontWeight: 600 }}>Você</div>
+              </div>
+              <div className="flex-1 flex items-center px-3">
+                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--brand-card)" }}>
+                  <div className="h-full rounded-full" style={{ background: "var(--brand-emerald)", width: palmD != null && palmD > 0 ? `${Math.min(100, (palmD / targetGripD) * 100)}%` : "0%" }} />
+                </div>
+              </div>
+              <div className="text-center">
+                <div style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700 }}>{targetGripD.toFixed(1)} <span style={{ fontSize: 11, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+                <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 600 }}>Alvo</div>
               </div>
             </div>
+          </div>
 
-            <div className="text-center">
-              <div style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700 }}>50.0 <span style={{ fontSize: 12, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
-              <div style={{ color: "var(--brand-text-muted)", fontSize: 12, fontWeight: 600 }}>Alvo</div>
+          {/* Mão Esquerda */}
+          <div className="rounded-xl p-3" style={{ background: "var(--brand-chip-bg)" }}>
+            <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>Mão Esquerda</div>
+            <div className="flex items-center justify-between">
+              <div className="text-center">
+                <div style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700 }}>{palmE != null && palmE > 0 ? palmE.toFixed(1) : "--"} <span style={{ fontSize: 11, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+                <div style={{ color: "var(--brand-emerald)", fontSize: 11, fontWeight: 600 }}>Você</div>
+              </div>
+              <div className="flex-1 flex items-center px-3">
+                <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "var(--brand-card)" }}>
+                  <div className="h-full rounded-full" style={{ background: "var(--brand-emerald)", width: palmE != null && palmE > 0 ? `${Math.min(100, (palmE / targetGripE) * 100)}%` : "0%" }} />
+                </div>
+              </div>
+              <div className="text-center">
+                <div style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 700 }}>{targetGripE.toFixed(1)} <span style={{ fontSize: 11, fontWeight: 500, color: "var(--brand-text-muted)" }}>kgf</span></div>
+                <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 600 }}>Alvo</div>
+              </div>
             </div>
           </div>
         </div>
@@ -172,8 +285,8 @@ export function HomeScreen({
           </div>
           <div className="space-y-2">
             {[
-              { side: "Direita", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPalmD != null ? weeklyStats.avgPalmD.toFixed(1) : "--", peak: weeklyStats?.maxPalmD != null ? weeklyStats.maxPalmD.toFixed(1) : "--" },
-              { side: "Esquerda", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPalmE != null ? weeklyStats.avgPalmE.toFixed(1) : "--", peak: weeklyStats?.maxPalmE != null ? weeklyStats.maxPalmE.toFixed(1) : "--" },
+              { side: "Direita", sessions: countSessions("palmMaxD"), avg: weeklyStats?.avgPalmD != null ? weeklyStats.avgPalmD.toFixed(1) : "--", peak: weeklyStats?.maxPalmD != null ? weeklyStats.maxPalmD.toFixed(1) : "--" },
+              { side: "Esquerda", sessions: countSessions("palmMaxE"), avg: weeklyStats?.avgPalmE != null ? weeklyStats.avgPalmE.toFixed(1) : "--", peak: weeklyStats?.maxPalmE != null ? weeklyStats.maxPalmE.toFixed(1) : "--" },
             ].map((h) => (
               <div key={h.side} className="rounded-xl p-3" style={{ background: "var(--brand-chip-bg)" }}>
                 <div style={{ color: "var(--brand-text)", fontSize: 12, fontWeight: 600 }} className="mb-1.5">Mão {h.side}</div>
@@ -201,10 +314,10 @@ export function HomeScreen({
           </div>
           <div className="space-y-2">
             {[
-              { finger: "Indicador", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPinchD1 != null ? weeklyStats.avgPinchD1.toFixed(1) : "--", peak: weeklyStats?.maxPinchD1 != null ? weeklyStats.maxPinchD1.toFixed(1) : "--" },
-              { finger: "Médio", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPinchD2 != null ? weeklyStats.avgPinchD2.toFixed(1) : "--", peak: weeklyStats?.maxPinchD2 != null ? weeklyStats.maxPinchD2.toFixed(1) : "--" },
-              { finger: "Anelar", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPinchD3 != null ? weeklyStats.avgPinchD3.toFixed(1) : "--", peak: weeklyStats?.maxPinchD3 != null ? weeklyStats.maxPinchD3.toFixed(1) : "--" },
-              { finger: "Mínimo", sessions: weeklyStats?.count ?? "--", avg: weeklyStats?.avgPinchD4 != null ? weeklyStats.avgPinchD4.toFixed(1) : "--", peak: weeklyStats?.maxPinchD4 != null ? weeklyStats.maxPinchD4.toFixed(1) : "--" },
+              { finger: "Indicador", sessions: countSessions("pinchMaxD1"), avg: weeklyStats?.avgPinchD1 != null ? weeklyStats.avgPinchD1.toFixed(1) : "--", peak: weeklyStats?.maxPinchD1 != null ? weeklyStats.maxPinchD1.toFixed(1) : "--" },
+              { finger: "Médio", sessions: countSessions("pinchMaxD2"), avg: weeklyStats?.avgPinchD2 != null ? weeklyStats.avgPinchD2.toFixed(1) : "--", peak: weeklyStats?.maxPinchD2 != null ? weeklyStats.maxPinchD2.toFixed(1) : "--" },
+              { finger: "Anelar", sessions: countSessions("pinchMaxD3"), avg: weeklyStats?.avgPinchD3 != null ? weeklyStats.avgPinchD3.toFixed(1) : "--", peak: weeklyStats?.maxPinchD3 != null ? weeklyStats.maxPinchD3.toFixed(1) : "--" },
+              { finger: "Mínimo", sessions: countSessions("pinchMaxD4"), avg: weeklyStats?.avgPinchD4 != null ? weeklyStats.avgPinchD4.toFixed(1) : "--", peak: weeklyStats?.maxPinchD4 != null ? weeklyStats.maxPinchD4.toFixed(1) : "--" },
             ].map((f) => (
               <div key={f.finger} className="rounded-xl p-3" style={{ background: "var(--brand-chip-bg)" }}>
                 <div style={{ color: "var(--brand-text)", fontSize: 12, fontWeight: 600 }} className="mb-1.5">{f.finger}</div>
@@ -257,11 +370,21 @@ export function HomeScreen({
               </h2>
               
               <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }} className="mb-4">
-                Os valores de referência (Alvo) apresentados no aplicativo são calculados com base em sua <strong>idade</strong>, <strong>peso</strong>, <strong>altura</strong> e <strong>gênero</strong>.
+                Os valores de referência (Alvo) são baseados em tabelas normativas validadas cientificamente, considerando sua <strong>idade</strong> e <strong>gênero</strong>.
               </p>
               
+              <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }} className="mb-3">
+                As fontes utilizadas são:
+              </p>
+
+              <ul style={{ color: "var(--brand-text-muted)", fontSize: 13, lineHeight: 1.7, paddingLeft: 18, listStyleType: "disc" }} className="mb-4">
+                <li><strong>Bohannon et al. (2006)</strong> — Meta-análise descritiva com dinamômetro Jamar em populações dos EUA, Austrália, Canadá, Ucrânia e Suécia.</li>
+                <li><strong>Caporrino et al. (1998)</strong> — Estudo populacional brasileiro com dinamômetro Jamar.</li>
+                <li><strong>Hogrel (2015)</strong> — Dados normativos de 5 a 80 anos, PMC4460675.</li>
+              </ul>
+              
               <p style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: 1.6 }}>
-                Eles refletem médias normativas validadas por estudos científicos e são amplamente utilizados na medicina esportiva e na fisioterapia para diagnosticar força muscular e detectar compensações e desbalanços.
+                Esses dados são amplamente utilizados na medicina esportiva e fisioterapia para diagnosticar força muscular e detectar desbalanços.
               </p>
               
               <button 

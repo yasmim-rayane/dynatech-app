@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useAppNotifications } from "../contexts/NotificationsContext";
 
 /* ── Tipo ──────────────────────────────────────────────────── */
 
@@ -53,6 +54,7 @@ function saveNextId(id: number) {
 export function useReminders() {
   const [reminders, setReminders] = useState<Reminder[]>(loadReminders);
   const [nextId, setNextId] = useState(loadNextId);
+  const { addNotification } = useAppNotifications();
 
   // Persistir ao mudar
   useEffect(() => {
@@ -74,9 +76,15 @@ export function useReminders() {
       };
       setNextId((n) => n + 1);
       setReminders((prev) => [reminder, ...prev]);
+      addNotification({
+        title: "Novo lembrete criado",
+        body: `${label.trim()} às ${time} — ${days.join(", ")}.`,
+        tone: "navy",
+        icon: "bell",
+      });
       return reminder;
     },
-    [nextId]
+    [nextId, addNotification]
   );
 
   const deleteReminder = useCallback((id: number) => {

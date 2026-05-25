@@ -6,67 +6,52 @@ import {
   Bluetooth,
   Award,
   CheckCheck,
+  Trash2,
+  X,
 } from "lucide-react";
+import { useAppNotifications, AppNotification, NotificationIcon } from "../contexts/NotificationsContext";
 
 export function NotificationsScreen({ onBack }: { onBack: () => void }) {
-  const groups = [
-    {
-      label: "Hoje",
-      items: [
-        {
-          Icon: Award,
-          title: "Novo recorde pessoal!",
-          body: "Você atingiu 44.8 kgf na preensão palmar — seu maior valor.",
-          time: "14:35",
-          unread: true,
-          tone: "emerald" as const,
-        },
-        {
-          Icon: Clock,
-          title: "Lembrete: Medição matinal",
-          body: "Está na hora da sua sessão de Preensão Palmar.",
-          time: "08:00",
-          unread: true,
-          tone: "navy" as const,
-        },
-      ],
-    },
-    {
-      label: "Esta semana",
-      items: [
-        {
-          Icon: TrendingUp,
-          title: "Sua semana melhorou 5.8%",
-          body: "Sua média de preensão subiu em relação à semana anterior.",
-          time: "Ontem",
-          unread: false,
-          tone: "cyan" as const,
-        },
-        {
-          Icon: Bluetooth,
-          title: "Dispositivo conectado",
-          body: "Dyna Tech Grip foi pareado com sucesso.",
-          time: "2 dias",
-          unread: false,
-          tone: "navy" as const,
-        },
-        {
-          Icon: Bell,
-          title: "Novo lembrete criado",
-          body: "Treino noturno às 19:30 — Diariamente.",
-          time: "3 dias",
-          unread: false,
-          tone: "navy" as const,
-        },
-      ],
-    },
-  ];
-
+  const { notifications, markAllAsRead, deleteNotification, deleteAllNotifications } = useAppNotifications();
   const toneMap = {
     emerald: { bg: "var(--brand-emerald-soft)", fg: "var(--brand-emerald)" },
     cyan: { bg: "var(--brand-chip-bg)", fg: "var(--brand-cyan)" },
     navy: { bg: "var(--brand-chip-bg)", fg: "var(--brand-text)" },
   };
+
+  const IconMap: Record<NotificationIcon, React.ElementType> = {
+    award: Award,
+    clock: Clock,
+    "trending-up": TrendingUp,
+    bluetooth: Bluetooth,
+    bell: Bell,
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const groups: { label: string; items: AppNotification[] }[] = [];
+  const hoje: AppNotification[] = [];
+  const anteriores: AppNotification[] = [];
+
+  notifications.forEach((n) => {
+    if (n.timestamp >= today.getTime()) {
+      hoje.push(n);
+    } else {
+      anteriores.push(n);
+    }
+  });
+
+  if (hoje.length > 0) groups.push({ label: "Hoje", items: hoje });
+  if (anteriores.length > 0) groups.push({ label: "Anteriores", items: anteriores });
+
+  function formatTime(ts: number) {
+    const d = new Date(ts);
+    if (ts >= today.getTime()) {
+      return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+    }
+    return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+  }
 
   return (
     <div
@@ -87,94 +72,129 @@ export function NotificationsScreen({ onBack }: { onBack: () => void }) {
         >
           Notificações
         </h2>
-        <button
-          className="flex items-center gap-1 rounded-full px-3 py-1.5 active:scale-95 transition-transform"
-          style={{
-            background: "var(--brand-emerald-soft)",
-            color: "var(--brand-emerald)",
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
-          <CheckCheck size={14} />
-          Ler tudo
-        </button>
+        <div className="flex gap-2">
+          {notifications.length > 0 && (
+            <>
+              <button
+                onClick={deleteAllNotifications}
+                className="flex items-center justify-center w-8 h-8 rounded-full active:scale-95 transition-transform"
+                style={{
+                  background: "var(--brand-danger-soft, rgba(239,68,68,0.1))",
+                  color: "var(--brand-danger, #ef4444)",
+                }}
+                title="Limpar todas"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                onClick={markAllAsRead}
+                className="flex items-center gap-1 rounded-full px-3 py-1.5 active:scale-95 transition-transform"
+                style={{
+                  background: "var(--brand-emerald-soft)",
+                  color: "var(--brand-emerald)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <CheckCheck size={14} />
+                Ler tudo
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="px-5 pt-3 pb-10 space-y-6">
-        {groups.map((g) => (
-          <div key={g.label}>
-            <div
-              className="px-1 mb-2"
-              style={{
-                color: "var(--brand-text-faint)",
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {g.label.toUpperCase()}
-            </div>
-            <div className="space-y-2">
-              {g.items.map((it, i) => {
-                const tone = toneMap[it.tone];
-                return (
-                  <div
-                    key={i}
-                    className="rounded-2xl p-4 flex gap-3 relative animate-fadeSlideUp"
-                    style={{
-                      background: "var(--brand-card)",
-                      border: "1px solid var(--brand-border-soft)",
-                      animationDelay: `${0.05 * i}s`,
-                    }}
-                  >
+        {groups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center pt-20 text-center">
+            <Bell size={48} style={{ color: "var(--brand-border-soft)", marginBottom: 16 }} />
+            <span style={{ color: "var(--brand-text-muted)", fontSize: 15, fontWeight: 500 }}>
+              Nenhuma notificação por enquanto.
+            </span>
+          </div>
+        ) : (
+          groups.map((g) => (
+            <div key={g.label}>
+              <div
+                className="px-1 mb-2"
+                style={{
+                  color: "var(--brand-text-faint)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {g.label.toUpperCase()}
+              </div>
+              <div className="space-y-2">
+                {g.items.map((it, i) => {
+                  const tone = toneMap[it.tone];
+                  const IconComp = IconMap[it.icon] || Bell;
+                  return (
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: tone.bg }}
+                      key={it.id}
+                      className="rounded-2xl p-4 flex gap-3 relative animate-fadeSlideUp group"
+                      style={{
+                        background: "var(--brand-card)",
+                        border: "1px solid var(--brand-border-soft)",
+                        animationDelay: `${0.05 * i}s`,
+                      }}
                     >
-                      <it.Icon size={18} style={{ color: tone.fg }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: tone.bg }}
+                      >
+                        <IconComp size={18} style={{ color: tone.fg }} />
+                      </div>
+                      <div className="flex-1 min-w-0 pr-6">
+                        <div className="flex items-baseline gap-2">
+                          <div
+                            style={{
+                              color: "var(--brand-text)",
+                              fontSize: 14,
+                              fontWeight: 600,
+                            }}
+                            className="flex-1 truncate"
+                          >
+                            {it.title}
+                          </div>
+                          <div
+                            style={{ color: "var(--brand-text-faint)", fontSize: 11 }}
+                          >
+                            {formatTime(it.timestamp)}
+                          </div>
+                        </div>
                         <div
                           style={{
-                            color: "var(--brand-text)",
-                            fontSize: 14,
-                            fontWeight: 600,
+                            color: "var(--brand-text-muted)",
+                            fontSize: 13,
+                            lineHeight: 1.4,
                           }}
-                          className="flex-1 truncate"
+                          className="mt-1"
                         >
-                          {it.title}
-                        </div>
-                        <div
-                          style={{ color: "var(--brand-text-faint)", fontSize: 11 }}
-                        >
-                          {it.time}
+                          {it.body}
                         </div>
                       </div>
-                      <div
-                        style={{
-                          color: "var(--brand-text-muted)",
-                          fontSize: 13,
-                          lineHeight: 1.4,
-                        }}
-                        className="mt-1"
+                      {it.unread && (
+                        <span
+                          className="absolute top-3 right-3 w-2 h-2 rounded-full"
+                          style={{ background: "var(--brand-emerald)" }}
+                        />
+                      )}
+                      <button
+                        onClick={() => deleteNotification(it.id)}
+                        className="absolute bottom-3 right-3 p-1 rounded-full opacity-60 active:opacity-100 transition-opacity"
+                        style={{ color: "var(--brand-danger, #ef4444)" }}
                       >
-                        {it.body}
-                      </div>
+                        <X size={16} />
+                      </button>
                     </div>
-                    {it.unread && (
-                      <span
-                        className="absolute top-3 right-3 w-2 h-2 rounded-full"
-                        style={{ background: "var(--brand-emerald)" }}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -13,7 +13,9 @@ import {
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useAppNotifications } from "../contexts/NotificationsContext";
 import * as api from "../services/api";
+import { BleService } from "../services/ble/BleService";
 
 type Type = "grip" | "pinch";
 type Side = "left" | "right";
@@ -72,42 +74,58 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
   const target = type === "grip" ? 42.5 : 8.7;
 
   useEffect(() => {
-    if (!running) return;
-    intervalRef.current = window.setInterval(() => {
-      setReading((prev) => {
-        const noise = (Math.random() - 0.4) * 6;
-        const next = Math.max(
-          0,
-          Math.min(max, prev + (target - prev) * 0.18 + noise)
-        );
-        setPeak((p) => Math.max(p, next));
-        return next;
-      });
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          stopRun();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+    // Registra os listeners do Bluetooth real
+    BleService.onLiveUpdate((currentKg) => {
+      setReading(currentKg);
+      setPeak((p) => Math.max(p, currentKg));
+    });
+
+    BleService.onStatus((isMeasuring) => {
+      setRunning(isMeasuring);
+      if (isMeasuring) {
+        setSecondsLeft(5);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = window.setInterval(() => {
+          setSecondsLeft((s) => Math.max(0, s - 1));
+        }, 1000);
+      } else {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      }
+    });
+
+    BleService.onResult((finalPeak) => {
+      setPeak(finalPeak);
+      setRunning(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setStep("result");
+      playSuccessFeedback(sound, vibration);
+    });
+
+    BleService.onDisconnect(() => {
+      setRunning(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      alert("Conexão com o dinamômetro foi perdida!");
+    });
+
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
-  }, [running, type, max, target]);
+  }, [sound, vibration]);
 
-  function startRun() {
-    setReading(0);
-    setPeak(0);
-    setSecondsLeft(5);
-    setRunning(true);
+  async function startRun() {
+    try {
+      setReading(0);
+      setPeak(0);
+      setSecondsLeft(5);
+      await BleService.startMeasurement();
+    } catch (e: any) {
+      alert("Erro ao iniciar medição: " + e.message);
+    }
   }
 
   function stopRun() {
-    setRunning(false);
-    if (intervalRef.current) window.clearInterval(intervalRef.current);
-    setStep("result");
-    playSuccessFeedback(sound, vibration);
+    // Medição agora é controlada exatamente por 5s no ESP32.
+    // Botão de parar desabilitado para garantir o protocolo clínico de 5s.
   }
 
   function reset() {
@@ -518,18 +536,18 @@ function LiveStep({
 
       {running ? (
         <button
-          onClick={onStop}
-          className="w-full rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-[0.97] transition-transform"
+          disabled
+          className="w-full rounded-xl flex items-center justify-center gap-2 shadow-md disabled:opacity-80 transition-transform"
           style={{
             height: 56,
-            background: "var(--brand-danger)",
+            background: "var(--brand-emerald)",
             color: "#FFFFFF",
             fontSize: 15,
             fontWeight: 600,
           }}
         >
-          <Square size={18} fill="#FFFFFF" />
-          Parar medição
+          <Loader2 size={18} className="animate-spin" />
+          Medindo...
         </button>
       ) : (
         <button
@@ -570,6 +588,8 @@ function ResultStep({
 }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const { addNotification } = useAppNotifications();
+  const { user } = useAuth();
   const fingerLabel = finger ? FINGER_OPTS.find(f => f.key === finger)?.label : "";
   return (
     <div className="flex flex-col items-center animate-scaleIn">
@@ -657,14 +677,87 @@ function ResultStep({
             // Monta o payload com base no tipo/lado/dedo
             const payload: api.ResultCreatePayload = { email };
             if (type === "grip") {
-              if (side === "right") payload.palmMaxD = Number(peak.toFixed(1));
-              else payload.palmMaxE = Number(peak.toFixed(1));
+              // Envia 0 no lado não medido para passar na validação estrita do backend
+              payload.palmMaxD = side === "right" ? Number(peak.toFixed(1)) : 0;
+              payload.palmMaxE = side === "left" ? Number(peak.toFixed(1)) : 0;
             } else if (type === "pinch") {
               const fingerMap: Record<string, string> = { indicador: "1", medio: "2", anelar: "3", minimo: "4" };
               const idx = finger ? fingerMap[finger] : "1";
+              
+              // Preenche todos os campos de pinça com 0 para passar na validação do backend
+              for (let i = 1; i <= 4; i++) {
+                (payload as any)[`pinchMaxD${i}`] = 0;
+                (payload as any)[`pinchMaxE${i}`] = 0;
+              }
+              
               if (side === "right") (payload as any)[`pinchMaxD${idx}`] = Number(peak.toFixed(1));
               else (payload as any)[`pinchMaxE${idx}`] = Number(peak.toFixed(1));
             }
+
+            // Calcular variações e recordes antes de salvar a atual
+            try {
+              const results = await api.getAllResults(email);
+              let maxSoFar = 0;
+              let sum = 0;
+              let count = 0;
+              let dominantSideMatched = false;
+
+              // Identificar se a mão medida é a dominante
+              const maoDomStr = user?.maoDominante?.toLowerCase() || "";
+              if ((maoDomStr.includes("destro") && side === "right") || 
+                  (maoDomStr.includes("canhoto") && side === "left")) {
+                dominantSideMatched = true;
+              }
+
+              results.forEach((r) => {
+                if (type === "grip") {
+                  const val = side === "right" ? r.palmMaxD : r.palmMaxE;
+                  if (val && val > 0) {
+                    if (val > maxSoFar) maxSoFar = val;
+                    sum += val;
+                    count++;
+                  }
+                } else if (type === "pinch") {
+                  const fingerMap: Record<string, string> = { indicador: "1", medio: "2", anelar: "3", minimo: "4" };
+                  const idx = finger ? fingerMap[finger] : "1";
+                  const val = side === "right" ? (r as any)[`pinchMaxD${idx}`] : (r as any)[`pinchMaxE${idx}`];
+                  if (val && val > 0) {
+                    if (val > maxSoFar) maxSoFar = val;
+                    sum += val;
+                    count++;
+                  }
+                }
+              });
+
+              const currentVal = Number(peak.toFixed(1));
+
+              // Recorde Pessoal
+              if (currentVal > maxSoFar && maxSoFar > 0) {
+                addNotification({
+                  title: "Novo recorde pessoal!",
+                  body: `Você atingiu ${currentVal} kgf — seu maior valor.`,
+                  tone: "emerald",
+                  icon: "award",
+                });
+              } else if (dominantSideMatched && count > 0) {
+                // Melhora/piora da média da mão dominante
+                const avg = sum / count;
+                const diff = currentVal - avg;
+                const pct = (diff / avg) * 100;
+                
+                if (Math.abs(pct) > 2) {
+                  addNotification({
+                    title: pct > 0 ? `Sua média melhorou ${pct.toFixed(1)}%` : `Sua média diminuiu ${Math.abs(pct).toFixed(1)}%`,
+                    body: pct > 0 ? "Sua força subiu em relação à média anterior." : "Sua força ficou abaixo da sua média.",
+                    tone: pct > 0 ? "cyan" : "navy",
+                    icon: pct > 0 ? "trending-up" : "clock",
+                  });
+                }
+              }
+            } catch (err) {
+              console.error("Erro ao processar notificações de histórico", err);
+            }
+
             await api.createResult(payload);
             onSave();
           } catch (e: any) {

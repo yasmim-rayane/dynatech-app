@@ -3,6 +3,7 @@ import { useReminders } from "./hooks/useReminders";
 import { BottomNav, Tab } from "./components/common/BottomNav";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
+import { NotificationsProvider, useAppNotifications } from "./contexts/NotificationsContext";
 import { LoginScreen } from "./screens/LoginScreen";
 import { SignupScreen } from "./screens/SignupScreen";
 import { ForgotScreen } from "./screens/ForgotScreen";
@@ -26,6 +27,24 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<SubScreen>(null);
   const remindersStore = useReminders();
+  const { addNotification } = useAppNotifications();
+
+  // Escutar notificações locais que disparam (lembretes agendados)
+  React.useEffect(() => {
+    import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
+      const listener = LocalNotifications.addListener("localNotificationReceived", (notification) => {
+        addNotification({
+          title: notification.title || "Lembrete",
+          body: notification.body || "Lembrete recebido.",
+          tone: "navy",
+          icon: "clock",
+        });
+      });
+      return () => {
+        listener.then(l => l.remove());
+      };
+    }).catch(err => console.error("Error setting up local notifications listener", err));
+  }, [addNotification]);
 
   let content;
   let showNav = false;
@@ -76,6 +95,7 @@ function Shell() {
         <HomeScreen
           onOpenNotifications={() => setSub("notifications")}
           onStartMeasurement={() => setSub("measure")}
+          onOpenPairing={() => setSub("pairing")}
         />
       );
     else if (tab === "history") inner = <HistoryScreen />;
@@ -161,14 +181,17 @@ function Shell() {
 }
 
 import { AuthProvider } from "./contexts/AuthContext";
+import React from "react";
 
 export default function App() {
   return (
     <ThemeProvider>
       <PreferencesProvider>
-        <AuthProvider>
-          <Shell />
-        </AuthProvider>
+        <NotificationsProvider>
+          <AuthProvider>
+            <Shell />
+          </AuthProvider>
+        </NotificationsProvider>
       </PreferencesProvider>
     </ThemeProvider>
   );

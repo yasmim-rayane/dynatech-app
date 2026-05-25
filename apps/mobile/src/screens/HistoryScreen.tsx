@@ -49,33 +49,6 @@ const d30n = ["Dia 1","Dia 5","Dia 10","Dia 15","Dia 20","Dia 25","Dia 30"];
 const d60n = ["Sem. 1","Sem. 2","Sem. 3","Sem. 4","Sem. 5","Sem. 6","Sem. 7","Sem. 8"];
 const dcn  = ["Med. 1","Med. 2","Med. 3","Med. 4","Med. 5"];
 
-const mockData: Record<string, Record<string, DataPoint>> = {
-  "palmar-direita":  { "15": gen([38,39,41,40,42,43,41.5,44], d15n), "30": gen([35,37,39,40,42,41,44], d30n), "60": gen([33,35,37,39,41,42,43,44.5], d60n), "custom": gen([36,38,39,41,43], dcn) },
-  "palmar-esquerda": { "15": gen([35,36,38,37,39,40,38.5,41], d15n), "30": gen([32,34,36,37,39,38,41], d30n), "60": gen([30,32,34,36,38,39,40,41.5], d60n), "custom": gen([33,35,36,38,40], dcn) },
-  // Pinça — Mão Direita
-  "pinca-direita-indicador": { "15": gen([7.5,7.8,8.0,8.1,8.4,8.3,8.5,8.8], d15n), "30": gen([7.0,7.5,7.8,8.2,8.4,8.7,9.0], d30n), "60": gen([6.5,6.8,7.1,7.5,7.9,8.2,8.5,8.9], d60n), "custom": gen([7.0,7.4,7.9,8.2,8.5], dcn) },
-  "pinca-direita-medio":     { "15": gen([6.8,7.0,7.2,7.4,7.6,7.5,7.7,8.0], d15n), "30": gen([6.3,6.8,7.1,7.5,7.7,8.0,8.3], d30n), "60": gen([5.8,6.1,6.4,6.8,7.2,7.5,7.8,8.2], d60n), "custom": gen([6.5,6.9,7.3,7.6,7.9], dcn) },
-  "pinca-direita-anelar":    { "15": gen([5.5,5.7,5.9,6.1,6.3,6.2,6.4,6.6], d15n), "30": gen([5.0,5.4,5.7,6.0,6.2,6.5,6.8], d30n), "60": gen([4.5,4.8,5.1,5.5,5.9,6.2,6.5,6.9], d60n), "custom": gen([5.2,5.6,6.0,6.3,6.6], dcn) },
-  "pinca-direita-minimo":    { "15": gen([4.2,4.4,4.6,4.7,4.9,4.8,5.0,5.2], d15n), "30": gen([3.8,4.1,4.4,4.7,4.9,5.1,5.4], d30n), "60": gen([3.5,3.8,4.1,4.4,4.7,5.0,5.3,5.6], d60n), "custom": gen([4.0,4.3,4.7,5.0,5.3], dcn) },
-  // Pinça — Mão Esquerda (valores ~8% menores)
-  "pinca-esquerda-indicador": { "15": gen([6.9,7.2,7.4,7.5,7.7,7.6,7.8,8.1], d15n), "30": gen([6.4,6.9,7.2,7.5,7.7,8.0,8.3], d30n), "60": gen([6.0,6.3,6.5,6.9,7.3,7.6,7.9,8.2], d60n), "custom": gen([6.5,6.8,7.3,7.6,7.9], dcn) },
-  "pinca-esquerda-medio":     { "15": gen([6.2,6.4,6.6,6.8,7.0,6.9,7.1,7.4], d15n), "30": gen([5.8,6.2,6.5,6.9,7.1,7.4,7.7], d30n), "60": gen([5.3,5.6,5.9,6.3,6.6,6.9,7.2,7.6], d60n), "custom": gen([6.0,6.3,6.7,7.0,7.3], dcn) },
-  "pinca-esquerda-anelar":    { "15": gen([5.0,5.2,5.4,5.6,5.8,5.7,5.9,6.1], d15n), "30": gen([4.6,4.9,5.2,5.5,5.7,6.0,6.3], d30n), "60": gen([4.1,4.4,4.7,5.0,5.4,5.7,6.0,6.4], d60n), "custom": gen([4.8,5.1,5.5,5.8,6.1], dcn) },
-  "pinca-esquerda-minimo":    { "15": gen([3.8,4.0,4.2,4.3,4.5,4.4,4.6,4.8], d15n), "30": gen([3.4,3.7,4.0,4.3,4.5,4.7,5.0], d30n), "60": gen([3.1,3.4,3.7,4.0,4.3,4.6,4.9,5.2], d60n), "custom": gen([3.6,3.9,4.3,4.6,4.9], dcn) },
-};
-
-const fullList = [
-  { date: "26/04", time: "14:32", type: "palmar", sub: "direita",   hand: "",        label: "Palmar Direita",             value: 42.5 },
-  { date: "26/04", time: "14:35", type: "palmar", sub: "esquerda",  hand: "",        label: "Palmar Esquerda",            value: 39.1 },
-  { date: "25/04", time: "08:10", type: "pinca",  sub: "indicador", hand: "direita", label: "Pinça Indicador (Dir.)",     value: 8.4 },
-  { date: "25/04", time: "08:12", type: "pinca",  sub: "indicador", hand: "esquerda",label: "Pinça Indicador (Esq.)",     value: 7.8 },
-  { date: "25/04", time: "08:14", type: "pinca",  sub: "medio",     hand: "direita", label: "Pinça Médio (Dir.)",         value: 7.6 },
-  { date: "24/04", time: "19:40", type: "palmar", sub: "direita",   hand: "",        label: "Palmar Direita",             value: 41.8 },
-  { date: "23/04", time: "07:52", type: "pinca",  sub: "anelar",    hand: "direita", label: "Pinça Anelar (Dir.)",        value: 6.3 },
-  { date: "22/04", time: "09:15", type: "pinca",  sub: "minimo",    hand: "esquerda",label: "Pinça Mínimo (Esq.)",        value: 4.7 },
-  { date: "20/04", time: "18:30", type: "pinca",  sub: "indicador", hand: "direita", label: "Pinça Indicador (Dir.)",     value: 7.9 },
-];
-
 export function HistoryScreen() {
   const [type, setType] = useState<ForceType>("palmar");
   const [palmarSub, setPalmarSub] = useState<PalmarSub>("direita");
@@ -105,12 +78,14 @@ export function HistoryScreen() {
   // Helper: extract the right value from a result based on current filter
   function getResultValue(r: ResultResponse): number | null {
     if (type === "palmar") {
-      return palmarSub === "direita" ? r.palmMaxD : r.palmMaxE;
+      const val = palmarSub === "direita" ? r.palmMaxD : r.palmMaxE;
+      return val && val > 0 ? val : null;
     }
     const fingerMap: Record<PincaSub, string> = { indicador: "1", medio: "2", anelar: "3", minimo: "4" };
     const idx = fingerMap[pincaSub];
     const key = `pinchMax${pincaHand === "direita" ? "D" : "E"}${idx}` as keyof ResultResponse;
-    return r[key] as number | null;
+    const val = r[key] as number | null;
+    return val && val > 0 ? val : null;
   }
 
   // Filter results by range
@@ -327,11 +302,13 @@ export function HistoryScreen() {
         const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 
         if (type === "palmar") {
-          const dirVal = r.palmMaxD != null ? r.palmMaxD.toFixed(1) : "--";
-          const esqVal = r.palmMaxE != null ? r.palmMaxE.toFixed(1) : "--";
+          const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
+          const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
+          const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
+          const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
           let analise = "";
-          if (r.palmMaxD != null && r.palmMaxE != null) {
-            analise = diffColor(r.palmMaxD, r.palmMaxE).label;
+          if (hasDir && hasEsq) {
+            analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
           }
           body.push([dateStr, timeStr, dirVal, esqVal, analise]);
         } else {
@@ -345,10 +322,12 @@ export function HistoryScreen() {
           fingerMap.forEach(f => {
             const dirVal = r[f.dField] as number | null;
             const esqVal = r[f.eField] as number | null;
-            if (dirVal != null || esqVal != null) {
+            const hasDir = dirVal != null && dirVal > 0;
+            const hasEsq = esqVal != null && esqVal > 0;
+            if (hasDir || hasEsq) {
               let analise = "";
-              if (dirVal != null && esqVal != null) analise = diffColor(dirVal, esqVal).label;
-              body.push([dateStr, f.label, dirVal != null ? dirVal.toFixed(1) : "--", esqVal != null ? esqVal.toFixed(1) : "--", analise]);
+              if (hasDir && hasEsq) analise = diffColor(dirVal!, esqVal!).label;
+              body.push([dateStr, f.label, hasDir ? dirVal!.toFixed(1) : "--", hasEsq ? esqVal!.toFixed(1) : "--", analise]);
             }
           });
         }
@@ -424,11 +403,13 @@ export function HistoryScreen() {
           const d = new Date(r.examDate);
           const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
           const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
-          const dirVal = r.palmMaxD != null ? r.palmMaxD.toFixed(1) : "--";
-          const esqVal = r.palmMaxE != null ? r.palmMaxE.toFixed(1) : "--";
+          const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
+          const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
+          const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
+          const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
           let analise = "";
-          if (r.palmMaxD != null && r.palmMaxE != null) {
-            analise = diffColor(r.palmMaxD, r.palmMaxE).label;
+          if (hasDir && hasEsq) {
+            analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
           }
           rows.push([dateStr, timeStr, dirVal, esqVal, analise]);
         });
@@ -447,10 +428,12 @@ export function HistoryScreen() {
           fingerMap.forEach(f => {
             const dirVal = r[f.dField] as number | null;
             const esqVal = r[f.eField] as number | null;
-            if (dirVal != null || esqVal != null) {
+            const hasDir = dirVal != null && dirVal > 0;
+            const hasEsq = esqVal != null && esqVal > 0;
+            if (hasDir || hasEsq) {
               let analise = "";
-              if (dirVal != null && esqVal != null) analise = diffColor(dirVal, esqVal).label;
-              rows.push([dateStr, f.label, dirVal != null ? dirVal.toFixed(1) : "--", esqVal != null ? esqVal.toFixed(1) : "--", analise]);
+              if (hasDir && hasEsq) analise = diffColor(dirVal!, esqVal!).label;
+              rows.push([dateStr, f.label, hasDir ? dirVal!.toFixed(1) : "--", hasEsq ? esqVal!.toFixed(1) : "--", analise]);
             }
           });
         });
@@ -656,57 +639,66 @@ export function HistoryScreen() {
             </span>
           </div>
           <div style={{ height: 180 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={currentData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: tick, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: tick, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const formattedLabel = String(label).replace("S", "Semana ").replace("D", "Dia ");
-                      return (
-                        <div
-                          style={{
-                            background: "var(--brand-card)",
-                            border: "1px solid var(--brand-border-soft)",
-                            borderRadius: 8,
-                            padding: "8px 12px",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                          }}
-                        >
-                          <p style={{ margin: 0, fontSize: 11, color: "var(--brand-text-faint)", fontWeight: 600, letterSpacing: "0.02em" }}>
-                            {formattedLabel.toUpperCase()}
-                          </p>
-                          <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: accentColor, marginTop: 2 }}>
-                            {Number(payload[0].value).toFixed(1)} kgf
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke={accentColor}
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: accentColor }}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {currentData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={currentData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: tick, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: tick, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const formattedLabel = String(label).replace("S", "Semana ").replace("D", "Dia ");
+                        return (
+                          <div
+                            style={{
+                              background: "var(--brand-card)",
+                              border: "1px solid var(--brand-border-soft)",
+                              borderRadius: 8,
+                              padding: "8px 12px",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                            }}
+                          >
+                            <p style={{ margin: 0, fontSize: 11, color: "var(--brand-text-faint)", fontWeight: 600, letterSpacing: "0.02em" }}>
+                              {formattedLabel.toUpperCase()}
+                            </p>
+                            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: accentColor, marginTop: 2 }}>
+                              {Number(payload[0].value).toFixed(1)} kgf
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="v"
+                    stroke={accentColor}
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: accentColor }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-center px-4">
+                <FileText size={32} style={{ color: "var(--brand-border-soft)", marginBottom: 12 }} />
+                <span style={{ color: "var(--brand-text-muted)", fontSize: 14, fontWeight: 500, lineHeight: 1.4 }}>
+                  Nenhum dado encontrado.<br/>Comece a medir para exibir seus valores no gráfico.
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

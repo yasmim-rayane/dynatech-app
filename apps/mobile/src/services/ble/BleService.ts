@@ -6,7 +6,23 @@ export class BleService {
   private static device: BleDevice | null = null;
   private static onResultCallback: ((resultKg: number) => void) | null = null;
   private static onStatusCallback: ((isMeasuring: boolean) => void) | null = null;
+  private static onLiveUpdateCallback: ((currentKg: number) => void) | null = null;
   private static onDisconnectCallback: (() => void) | null = null;
+  private static onConnectionStateChangeCallback: ((connected: boolean) => void) | null = null;
+
+  public static isConnected(): boolean {
+    return this.device !== null;
+  }
+
+  public static async isBluetoothEnabled(): Promise<boolean> {
+    try {
+      // Garante que o BleClient esteja inicializado antes de checar
+      await BleClient.initialize({ androidNeverForLocation: true });
+      return await BleClient.isEnabled();
+    } catch {
+      return false; // se falhar, assume que não está
+    }
+  }
 
   /**
    * Inicializa o cliente BLE nativo. 
@@ -22,37 +38,48 @@ export class BleService {
   }
 
   /**
-   * Realiza um Scan buscando especificamente pelo serviço do Dynamometer.
-   * Ao encontrar, tenta conectar e configurar os listeners.
+   * Inicia o scan em background buscando pelo serviço do Dynamometer.
+   * Aciona o callback onDeviceFound toda vez que detectar um device na área.
    */
-  public static async scanAndConnect(): Promise<boolean> {
+  public static async startScan(onDeviceFound: (device: BleDevice, rssi: number) => void): Promise<void> {
     try {
       console.log('Iniciando scan BLE...');
-      
-      const device = await BleClient.requestDevice({
-        services: [BLE_CONFIG.SERVICE_UUID],
-        optionalServices: [BLE_CONFIG.SERVICE_UUID]
-      });
-
-      if (device) {
-        this.device = device;
-        await this.connectToDevice(device.deviceId);
-        return true;
-      }
-      return false;
+      await BleClient.requestLEScan(
+        { services: [BLE_CONFIG.SERVICE_UUID] },
+        (result) => {
+          onDeviceFound(result.device, result.rssi || -100);
+        }
+      );
     } catch (error) {
-      console.error('Erro durante scan e conexão:', error);
+      console.error('Erro durante scan:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Para o escaneamento
+   */
+  public static async stopScan(): Promise<void> {
+    try {
+      await BleClient.stopLEScan();
+    } catch (error) {
+      console.error('Erro ao parar scan:', error);
     }
   }
 
   /**
    * Conecta ao device, estabelece a MTU e assina as notificações
    */
-  private static async connectToDevice(deviceId: string): Promise<void> {
+  public static async connectToDevice(device: BleDevice): Promise<void> {
     try {
+      const deviceId = device.deviceId;
       await BleClient.connect(deviceId, (dId) => this.handleDisconnect(dId));
+      this.device = device;
       console.log(`Conectado ao dispositivo: ${deviceId}`);
+      
+      if (this.onConnectionStateChangeCallback) {
+        this.onConnectionStateChangeCallback(true);
+      }
 
       // Inscreve para receber atualizações do RESULTADO
       await BleClient.startNotifications(
@@ -82,6 +109,20 @@ export class BleService {
           
           if (this.onStatusCallback) {
             this.onStatusCallback(isMeasuring);
+          }
+        }
+      );
+
+      // Inscreve para o LIVE STREAM (força atual)
+      await BleClient.startNotifications(
+        deviceId,
+        BLE_CONFIG.SERVICE_UUID,
+        BLE_CONFIG.CHAR_LIVE_UUID,
+        (value: DataView) => {
+          const liveStr = dataViewToText(value);
+          const currentKg = parseFloat(liveStr);
+          if (this.onLiveUpdateCallback) {
+            this.onLiveUpdateCallback(currentKg);
           }
         }
       );
@@ -123,6 +164,9 @@ export class BleService {
       try {
         await BleClient.disconnect(this.device.deviceId);
         this.device = null;
+        if (this.onConnectionStateChangeCallback) {
+          this.onConnectionStateChangeCallback(false);
+        }
       } catch (error) {
         console.error('Erro ao desconectar:', error);
       }
@@ -135,6 +179,9 @@ export class BleService {
   private static handleDisconnect(deviceId: string): void {
     console.log(`Dispositivo ${deviceId} desconectado.`);
     this.device = null;
+    if (this.onConnectionStateChangeCallback) {
+      this.onConnectionStateChangeCallback(false);
+    }
     if (this.onDisconnectCallback) {
       this.onDisconnectCallback();
     }
@@ -152,7 +199,15 @@ export class BleService {
     this.onStatusCallback = callback;
   }
 
+  public static onLiveUpdate(callback: (currentKg: number) => void) {
+    this.onLiveUpdateCallback = callback;
+  }
+
   public static onDisconnect(callback: () => void) {
     this.onDisconnectCallback = callback;
+  }
+
+  public static onConnectionStateChange(callback: (connected: boolean) => void) {
+    this.onConnectionStateChangeCallback = callback;
   }
 }
