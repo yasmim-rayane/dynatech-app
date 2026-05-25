@@ -52,7 +52,8 @@ Apesar de estar em fase de desenvolvimento contínuo, o aplicativo já conta com
 
 ### Pré-requisitos
 - Node.js (para o Frontend)
-- Java (para o Backend)
+- Java 25 (para o Backend)
+- Maven (para o Backend)
 - Docker e Docker Compose (para rodar o MySQL)
 - Android Studio (para rodar o app no smartphone)
 
