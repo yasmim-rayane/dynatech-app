@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `results` (
   `examDate` DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
   CONSTRAINT `fk_users_results`
     FOREIGN KEY (`userId`)
-    REFERENCES `users` (`a`)
+    REFERENCES `users` (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
