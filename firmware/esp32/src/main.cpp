@@ -4,6 +4,18 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include "HX711.h"
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// ==========================================
+// CONFIGURAÇÕES DO DISPLAY OLED
+// ==========================================
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // ==========================================
 // CONFIGURAÇÕES DE PINOS DO HX711
@@ -42,6 +54,11 @@ unsigned long lastLiveUpdate = 0;
 const unsigned long MEASUREMENT_DURATION_MS = 5000; // 5 segundos
 float maxForceDetected = 0.0;
 
+// Variáveis para controle do display
+bool showPeak = false;
+unsigned long peakDisplayStartTime = 0;
+const unsigned long PEAK_DISPLAY_DURATION_MS = 10000; // 10 segundos
+
 // ==========================================
 // CALLBACKS BLE
 // ==========================================
@@ -49,11 +66,26 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
       Serial.println("App Conectado!");
+      
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setCursor(0,0);
+      display.println("Dynamometer");
+      display.println("App Conectado!");
+      display.display();
     }
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       Serial.println("App Desconectado. Reiniciando advertising...");
+      
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setCursor(0,0);
+      display.println("Dynamometer");
+      display.println("Aguardando app...");
+      display.display();
+      
       // Permite que o app reconecte novamente
       BLEDevice::startAdvertising();
     }
@@ -71,6 +103,15 @@ class StartMeasurementCallbacks: public BLECharacteristicCallbacks {
           maxForceDetected = 0.0;
           measurementStartTime = millis();
           lastLiveUpdate = millis();
+          showPeak = false; // Cancela a exibição do pico se iniciar uma nova medição
+          
+          display.clearDisplay();
+          display.setTextSize(2);
+          display.setCursor(0, 0);
+          display.print("Forca:");
+          display.setCursor(0, 16);
+          display.print("0.0 kgf");
+          display.display();
           
           // Tara a balança no início da medição para ignorar peso da própria mão/aparelho
           scale.tare();
@@ -91,6 +132,20 @@ class StartMeasurementCallbacks: public BLECharacteristicCallbacks {
 void setup() {
   Serial.begin(115200);
   Serial.println("Iniciando Dynamometer Firmware...");
+
+  // Inicializa Display OLED (SDA=22, SCL=21)
+  Wire.begin(22, 21);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+  } else {
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.setCursor(0,0);
+    display.println("Dynamometer");
+    display.println("Aguardando app...");
+    display.display();
+  }
 
   // Inicializa HX711
   scale.begin(HX711_DOUT, HX711_SCK);
@@ -182,6 +237,16 @@ void loop() {
           dtostrf(currentForce, 1, 2, liveStr);
           pCharLive->setValue(liveStr);
           pCharLive->notify();
+
+          // Atualiza o Display
+          display.clearDisplay();
+          display.setTextSize(2);
+          display.setCursor(0, 0);
+          display.print("Forca:");
+          display.setCursor(0, 16);
+          display.print(currentForce, 1);
+          display.print(" kgf");
+          display.display();
         }
 
         // Print opcional para debug na serial
@@ -203,6 +268,35 @@ void loop() {
       // Atualiza o characteristic de status para Idle (0) e notifica
       pCharStatus->setValue("0");
       pCharStatus->notify();
+
+      // Exibe o pico no display por 10 segundos
+      showPeak = true;
+      peakDisplayStartTime = millis();
+      display.clearDisplay();
+      display.setTextSize(2);
+      display.setCursor(0, 0);
+      display.print("PICO MAX:");
+      display.setCursor(0, 16);
+      display.print(maxForceDetected, 1);
+      display.print(" kgf");
+      display.display();
+    }
+  }
+
+  // Verifica se o tempo de exibição do pico terminou
+  if (showPeak && !isMeasuring) {
+    if (millis() - peakDisplayStartTime > PEAK_DISPLAY_DURATION_MS) {
+      showPeak = false;
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setCursor(0,0);
+      display.println("Dynamometer");
+      if (deviceConnected) {
+        display.println("Pronto para medir");
+      } else {
+        display.println("Aguardando app...");
+      }
+      display.display();
     }
   }
 
