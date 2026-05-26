@@ -180,12 +180,13 @@ const GENERO_BACK_TO_FRONT: Record<string, string> = {
 const MAO_FRONT_TO_BACK: Record<string, string> = {
   "Direita": "d",
   "Esquerda": "e",
-  "Ambidestro": "d", // back aceita apenas "d" ou "e", tratamos ambidestro como "d"
+  "Ambidestro": "a",
 };
 
 const MAO_BACK_TO_FRONT: Record<string, string> = {
   "d": "Direita",
   "e": "Esquerda",
+  "a": "Ambidestro",
 };
 
 export function generoToFront(v: string): string { return GENERO_BACK_TO_FRONT[v] ?? v; }
