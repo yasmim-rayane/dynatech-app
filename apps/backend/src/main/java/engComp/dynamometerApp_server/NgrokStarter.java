@@ -12,8 +12,15 @@ public class NgrokStarter implements ApplicationListener<ApplicationReadyEvent> 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         try {
+            String authToken = System.getenv("NGROK_AUTHTOKEN");
+
+            new ProcessBuilder("ngrok", "config", "add-authtoken", authToken)
+                    .start()
+                    .waitFor();
+
             ngrokProcess = new ProcessBuilder("ngrok", "http", "8080")
                     .start();
+
             System.out.println("ngrok iniciado!");
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
