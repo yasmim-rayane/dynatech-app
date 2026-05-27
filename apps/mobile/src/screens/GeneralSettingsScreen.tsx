@@ -20,6 +20,7 @@ import { useAuth } from "../contexts/AuthContext";
 import * as api from "../services/api";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { BleClient } from "@capacitor-community/bluetooth-le";
+import { BleService } from "../services/ble/BleService";
 
 export function GeneralSettingsScreen({
   onBack,
@@ -42,6 +43,7 @@ export function GeneralSettingsScreen({
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [bleConnected, setBleConnected] = useState(BleService.isConnected());
 
   const [notifPerm, setNotifPerm] = useState("Verificando...");
   const [btPerm, setBtPerm] = useState("Verificando...");
@@ -49,6 +51,7 @@ export function GeneralSettingsScreen({
   useEffect(() => {
     calculateCache();
     checkPerms();
+    BleService.onConnectionStateChange((state) => setBleConnected(state));
   }, []);
 
   async function checkPerms() {
@@ -170,7 +173,7 @@ export function GeneralSettingsScreen({
           <NavRow
             Icon={Bluetooth}
             label="Parear dinamômetro"
-            value="Dyna Tech Grip"
+            value={bleConnected ? "Conectado" : "Desconectado"}
             onClick={onOpenPairing}
           />
         </Group>

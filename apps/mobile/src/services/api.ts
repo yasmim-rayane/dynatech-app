@@ -15,7 +15,7 @@ import { Capacitor } from "@capacitor/core";
  * Defina VITE_API_URL no .env para apontar para o backend real.
  */
 const API_BASE_URL = Capacitor.isNativePlatform()
-  ? (import.meta.env.VITE_API_URL ?? "http://192.168.15.2:8080/api") // URL configurada
+  ? (import.meta.env.VITE_API_URL ?? "https://powdering-discharge-washhouse.ngrok-free.dev/api") // URL configurada para ngrok
   : "/api";
 
 // ────────────────────────────── Tipos ───────────────────────────────────
@@ -140,7 +140,11 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers as Record<string, string> },
+    headers: { 
+      "Content-Type": "application/json", 
+      "ngrok-skip-browser-warning": "true", // Evita a tela de aviso do ngrok free
+      ...options.headers as Record<string, string> 
+    },
     ...options,
   });
 
@@ -176,12 +180,13 @@ const GENERO_BACK_TO_FRONT: Record<string, string> = {
 const MAO_FRONT_TO_BACK: Record<string, string> = {
   "Direita": "d",
   "Esquerda": "e",
-  "Ambidestro": "d", // back aceita apenas "d" ou "e", tratamos ambidestro como "d"
+  "Ambidestro": "a",
 };
 
 const MAO_BACK_TO_FRONT: Record<string, string> = {
   "d": "Direita",
   "e": "Esquerda",
+  "a": "Ambidestro",
 };
 
 export function generoToFront(v: string): string { return GENERO_BACK_TO_FRONT[v] ?? v; }
