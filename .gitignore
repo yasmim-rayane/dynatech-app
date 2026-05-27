@@ -31,6 +31,7 @@ yarn-error.log*
 
 # Local env files
 .env*.local
+.env
 
 # Capacitor
 /android/app/build
