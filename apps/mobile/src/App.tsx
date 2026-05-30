@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useReminders } from "./hooks/useReminders";
+
 import { BottomNav, Tab } from "./components/common/BottomNav";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
@@ -11,14 +11,34 @@ import { PairingScreen } from "./screens/PairingScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { HistoryScreen } from "./screens/HistoryScreen";
-import { RemindersScreen } from "./screens/RemindersScreen";
-import { ProfileScreen } from "./screens/ProfileScreen";
+
+import { PatientProfileScreen } from "./screens/PatientProfileScreen";
+import { ProfessionalProfileScreen } from "./screens/ProfessionalProfileScreen";
 import { NotificationsScreen } from "./screens/NotificationsScreen";
 import { AccountSettingsScreen } from "./screens/AccountSettingsScreen";
 import { GeneralSettingsScreen } from "./screens/GeneralSettingsScreen";
 import { MeasurementScreen } from "./screens/MeasurementScreen";
+import { RoleSelectionScreen } from "./screens/RoleSelectionScreen";
+import { PatientEmailScreen } from "./screens/PatientEmailScreen";
+import { PatientSignupScreen } from "./screens/PatientSignupScreen";
+import { PatientsScreen } from "./screens/PatientsScreen";
+import { PatientHomeScreen } from "./screens/PatientHomeScreen";
+import { PatientHistoryScreen } from "./screens/PatientHistoryScreen";
+import { PatientBenefitsScreen } from "./screens/PatientBenefitsScreen";
+import { App as CapacitorApp } from "@capacitor/app";
 
-type Stage = "login" | "signup" | "forgot" | "tutorial" | "pairing" | "app";
+type Stage =
+  | "login"
+  | "signup"
+  | "forgot"
+  | "tutorial"
+  | "pairing"
+  | "app"
+  | "role-select"
+  | "patient-email"
+  | "patient-signup"
+  | "patient-benefits";
+
 type SubScreen = "notifications" | "account" | "general" | "pairing" | "measure" | "tutorial" | null;
 
 function Shell() {
@@ -26,8 +46,22 @@ function Shell() {
   const [stage, setStage] = useState<Stage>("login");
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<SubScreen>(null);
-  const remindersStore = useReminders();
+  const [patientEmail, setPatientEmail] = useState("");
+
   const { addNotification } = useAppNotifications();
+
+  // Auth context — para acessar userRole
+  const auth = useAuth();
+  const { userRole, isProfessional, isPatient } = auth;
+
+  // Auto-login / Logout observer
+  React.useEffect(() => {
+    if (auth.user && stage === "login") {
+      setStage("app");
+    } else if (!auth.user && stage === "app") {
+      setStage("login");
+    }
+  }, [auth.user, stage]);
 
   // Escutar notificações locais que disparam (lembretes agendados)
   React.useEffect(() => {
@@ -46,19 +80,85 @@ function Shell() {
     }).catch(err => console.error("Error setting up local notifications listener", err));
   }, [addNotification]);
 
+  // Listener para o botão voltar físico do Android
+  React.useEffect(() => {
+    const handleBackButton = () => {
+      if (sub) {
+        // Se estiver em uma subtela, fecha ela
+        setSub(null);
+      } else if (stage === "patient-signup" || stage === "patient-email") {
+        setStage("role-select");
+      } else if (stage === "signup" || stage === "forgot" || stage === "role-select") {
+        setStage("login");
+      } else if (stage === "app" && tab !== "home") {
+        // Se estiver no app mas não na home, volta para a home
+        setTab("home");
+      } else if (stage === "app" && tab === "home") {
+        // Na home, sai do app
+        CapacitorApp.minimizeApp();
+      }
+    };
+
+    const listener = CapacitorApp.addListener("backButton", handleBackButton);
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [sub, stage, tab]);
+
+  /* ── Controle Global ── */
   let content;
   let showNav = false;
 
   if (stage === "login") {
     content = (
       <LoginScreen
-        onLogin={() => setStage("app")}
-        onSignup={() => setStage("signup")}
+        onLogin={() => {
+          // Após login, direciona conforme o role
+          if (auth.userRole === "patient") {
+            setStage("app");
+          } else {
+            setStage("app");
+          }
+        }}
+        onSignup={() => setStage("role-select")}
         onForgot={() => setStage("forgot")}
       />
     );
+  } else if (stage === "role-select") {
+    content = (
+      <RoleSelectionScreen
+        onBack={() => setStage("login")}
+        onSelectRole={(role) => {
+          if (role === "professional") {
+            setStage("signup");
+          } else {
+            setStage("patient-email");
+          }
+        }}
+      />
+    );
   } else if (stage === "signup") {
-    content = <SignupScreen onComplete={() => setStage("tutorial")} onBack={() => setStage("login")} />;
+    content = <SignupScreen onComplete={() => setStage("tutorial")} onBack={() => setStage("role-select")} />;
+  } else if (stage === "patient-email") {
+    content = (
+      <PatientEmailScreen
+        onBack={() => setStage("role-select")}
+        onEmailValid={(email) => {
+          setPatientEmail(email);
+          setStage("patient-signup");
+        }}
+      />
+    );
+  } else if (stage === "patient-signup") {
+    content = (
+      <PatientSignupScreen
+        email={patientEmail}
+        onBack={() => setStage("patient-email")}
+        onComplete={() => setStage("patient-benefits")}
+      />
+    );
+  } else if (stage === "patient-benefits") {
+    content = <PatientBenefitsScreen onContinue={() => setStage("app")} />;
   } else if (stage === "forgot") {
     content = <ForgotScreen onBack={() => setStage("login")} />;
   } else if (stage === "tutorial") {
@@ -78,6 +178,7 @@ function Shell() {
           setSub(null);
           setTab("home");
           setStage("login");
+          auth.logout();
         }}
       />
     );
@@ -90,29 +191,62 @@ function Shell() {
   } else {
     showNav = true;
     let inner;
-    if (tab === "home")
-      inner = (
-        <HomeScreen
-          onOpenNotifications={() => setSub("notifications")}
-          onStartMeasurement={() => setSub("measure")}
-          onOpenPairing={() => setSub("pairing")}
-        />
-      );
-    else if (tab === "history") inner = <HistoryScreen />;
-    else if (tab === "reminders")
-      inner = <RemindersScreen remindersStore={remindersStore} />;
-    else
-      inner = (
-        <ProfileScreen
-          onLogout={() => {
-            setTab("home");
-            setStage("login");
-          }}
-          onOpenAccount={() => setSub("account")}
-          onOpenGeneral={() => setSub("general")}
-          onOpenTutorial={() => setSub("tutorial")}
-        />
-      );
+
+    if (isPatient) {
+      // ── View do Paciente (Read-Only) ──
+      if (tab === "home") {
+        inner = (
+          <PatientHomeScreen
+            onOpenNotifications={() => setSub("notifications")}
+          />
+        );
+      } else if (tab === "history") {
+        inner = <PatientHistoryScreen />;
+      } else {
+        inner = (
+          <PatientProfileScreen
+            onLogout={() => {
+              setTab("home");
+              setStage("login");
+              auth.logout();
+            }}
+            onOpenAccount={() => setSub("account")}
+            onOpenGeneral={() => setSub("general")}
+            onOpenTutorial={() => setSub("tutorial")}
+          />
+        );
+      }
+    } else {
+      // ── View do Profissional (Acesso Total) ──
+      if (tab === "home") {
+        inner = (
+          <HomeScreen
+            onOpenNotifications={() => setSub("notifications")}
+            onOpenPairing={() => setSub("pairing")}
+            onGoToPatients={() => setTab("patients")}
+          />
+        );
+      } else if (tab === "history") {
+        inner = <HistoryScreen />;
+      } else if (tab === "patients") {
+        inner = <PatientsScreen onStartMeasurement={() => setSub("measure")} />;
+
+      } else {
+        inner = (
+          <ProfessionalProfileScreen
+            onLogout={() => {
+              setTab("home");
+              setStage("login");
+              auth.logout();
+            }}
+            onOpenAccount={() => setSub("account")}
+            onOpenGeneral={() => setSub("general")}
+            onOpenTutorial={() => setSub("tutorial")}
+          />
+        );
+      }
+    }
+
     content = inner;
   }
 
@@ -173,14 +307,15 @@ function Shell() {
             zIndex: 50,
           }}
         >
-          <BottomNav active={tab} onChange={setTab} />
+          <BottomNav active={tab} onChange={setTab} userRole={userRole} />
         </div>
       )}
     </div>
   );
 }
 
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PatientsProvider } from "./contexts/PatientsContext";
 import React from "react";
 
 export default function App() {
@@ -189,7 +324,9 @@ export default function App() {
       <PreferencesProvider>
         <NotificationsProvider>
           <AuthProvider>
-            <Shell />
+            <PatientsProvider>
+              <Shell />
+            </PatientsProvider>
           </AuthProvider>
         </NotificationsProvider>
       </PreferencesProvider>

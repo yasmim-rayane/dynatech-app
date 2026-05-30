@@ -4,8 +4,6 @@ import { useAuth } from "../contexts/AuthContext";
 
 /* ── Helpers de validação ──────────────────────────────────── */
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 function validatePassword(pw: string) {
   const checks = {
     length: pw.length >= 8 && pw.length <= 12,
@@ -19,49 +17,39 @@ function validatePassword(pw: string) {
 
 /* ── Componente ────────────────────────────────────────────── */
 
-export function SignupScreen({
+export function PatientSignupScreen({
+  email,
   onBack,
   onComplete,
 }: {
+  email: string;
   onBack: () => void;
   onComplete: () => void;
 }) {
   const auth = useAuth();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  /* Campos "tocados" — exibem erro somente após interação */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (field: string) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
 
-  /* Validações individuais */
-  const emailOk = EMAIL_RE.test(email);
+  const usernameOk = username.trim().length >= 4;
   const pwChecks = validatePassword(password);
   const confirmOk = confirm.length > 0 && confirm === password;
-  const nameOk = name.trim().length >= 2;
-  const usernameOk = username.trim().length >= 4;
 
-  /* Formulário inteiro válido */
   const formValid = useMemo(
-    () =>
-      nameOk &&
-      emailOk &&
-      usernameOk &&
-      pwChecks.valid &&
-      confirmOk,
-    [nameOk, emailOk, usernameOk, pwChecks.valid, confirmOk]
+    () => usernameOk && pwChecks.valid && confirmOk,
+    [usernameOk, pwChecks.valid, confirmOk],
   );
 
   const inputStyle: React.CSSProperties = {
     background: "var(--brand-input-bg)",
     border: "1px solid var(--brand-border)",
     color: "var(--brand-text)",
-    fontSize: 14,
+    fontSize: 15,
   };
 
   const errorInputStyle: React.CSSProperties = {
@@ -71,8 +59,8 @@ export function SignupScreen({
 
   const errorTextStyle: React.CSSProperties = {
     color: "var(--brand-danger)",
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 5,
     display: "flex",
     alignItems: "center",
     gap: 4,
@@ -80,8 +68,8 @@ export function SignupScreen({
 
   const validTextStyle: React.CSSProperties = {
     color: "var(--brand-emerald)",
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 5,
     display: "flex",
     alignItems: "center",
     gap: 4,
@@ -101,88 +89,93 @@ export function SignupScreen({
         >
           <ChevronLeft size={20} style={{ color: "var(--brand-text)" }} />
         </button>
-        <h2 style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 600 }}>
-          Cadastro profissional
+        <h2
+          style={{
+            color: "var(--brand-text)",
+            fontSize: 18,
+            fontWeight: 600,
+          }}
+        >
+          Finalizar cadastro
         </h2>
       </div>
 
-      {/* Fields */}
-      <div className="flex-1 overflow-y-auto px-6 pb-32 pt-4 space-y-4 scroll-y no-scrollbar">
-        <div className="animate-fadeSlideUp mb-2">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 pb-32 pt-4 space-y-5 scroll-y no-scrollbar">
+        <div className="animate-fadeSlideUp">
           <h3
             style={{
               color: "var(--brand-text)",
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: 700,
               letterSpacing: "-0.02em",
             }}
           >
-            Crie sua conta
+            Quase lá!
           </h3>
           <p
-            style={{ color: "var(--brand-text-muted)", fontSize: 13 }}
-            className="mt-1"
+            style={{
+              color: "var(--brand-text-muted)",
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+            className="mt-2"
           >
-            Preencha os dados para acessar o Dyna Tech como profissional.
+            Crie um nome de usuário e uma senha para acessar sua conta.
           </p>
         </div>
 
-        {/* Nome */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-            Nome completo
-          </label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => touch("name")}
-            placeholder="Dr. João Mendes"
-            maxLength={90}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.name && !nameOk ? errorInputStyle : inputStyle}
-          />
-          {touched.name && !nameOk && (
-            <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Insira seu nome completo
-            </div>
-          )}
-        </div>
-
-        {/* E-mail */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0.05s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+        {/* E-mail (read-only) */}
+        <div
+          className="animate-fadeSlideUp"
+          style={{ animationDelay: "0.05s" }}
+        >
+          <label
+            style={{
+              fontSize: 13,
+              color: "var(--brand-text)",
+              fontWeight: 500,
+            }}
+          >
             E-mail
           </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => touch("email")}
-            placeholder="profissional@clinica.com"
-            maxLength={45}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.email && !emailOk ? errorInputStyle : inputStyle}
-          />
-          {touched.email && !emailOk && (
-            <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Insira um e-mail válido (ex: nome@domínio.com)
-            </div>
-          )}
+          <div
+            className="w-full h-12 px-4 mt-1.5 rounded-xl flex items-center"
+            style={{
+              background: "var(--brand-chip-bg)",
+              border: "1px solid var(--brand-border-soft)",
+              color: "var(--brand-text-muted)",
+              fontSize: 14,
+            }}
+          >
+            {email}
+          </div>
         </div>
 
         {/* Usuário */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0.1s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+        <div
+          className="animate-fadeSlideUp"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <label
+            style={{
+              fontSize: 13,
+              color: "var(--brand-text)",
+              fontWeight: 500,
+            }}
+          >
             Nome de usuário
           </label>
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onBlur={() => touch("username")}
-            placeholder="@drjoao"
+            placeholder="@meunome"
             maxLength={15}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.username && !usernameOk ? errorInputStyle : inputStyle}
+            style={
+              touched.username && !usernameOk ? errorInputStyle : inputStyle
+            }
           />
           {touched.username && !usernameOk && (
             <div style={errorTextStyle}>
@@ -192,8 +185,17 @@ export function SignupScreen({
         </div>
 
         {/* Senha */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0.15s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+        <div
+          className="animate-fadeSlideUp"
+          style={{ animationDelay: "0.15s" }}
+        >
+          <label
+            style={{
+              fontSize: 13,
+              color: "var(--brand-text)",
+              fontWeight: 500,
+            }}
+          >
             Senha
           </label>
           <input
@@ -204,9 +206,10 @@ export function SignupScreen({
             placeholder="••••••••"
             maxLength={12}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.password && !pwChecks.valid ? errorInputStyle : inputStyle}
+            style={
+              touched.password && !pwChecks.valid ? errorInputStyle : inputStyle
+            }
           />
-          {/* Checklist de senha — aparece assim que começa a digitar */}
           {(touched.password || password.length > 0) && (
             <div className="mt-2 space-y-1">
               <PwRule ok={pwChecks.length} label="8 a 12 caracteres" />
@@ -219,8 +222,17 @@ export function SignupScreen({
         </div>
 
         {/* Confirmar senha */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0.2s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
+        <div
+          className="animate-fadeSlideUp"
+          style={{ animationDelay: "0.2s" }}
+        >
+          <label
+            style={{
+              fontSize: 13,
+              color: "var(--brand-text)",
+              fontWeight: 500,
+            }}
+          >
             Confirmar senha
           </label>
           <input
@@ -231,7 +243,9 @@ export function SignupScreen({
             placeholder="••••••••"
             maxLength={12}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.confirm && !confirmOk ? errorInputStyle : inputStyle}
+            style={
+              touched.confirm && !confirmOk ? errorInputStyle : inputStyle
+            }
           />
           {touched.confirm && confirm.length > 0 && !confirmOk && (
             <div style={errorTextStyle}>
@@ -276,27 +290,14 @@ export function SignupScreen({
             if (!formValid || auth.isLoading) return;
             setSubmitError("");
             try {
-              await auth.signup(
-                {
-                  name: name.trim(),
-                  username: username.trim(),
-                  email: email.trim(),
-                  password,
-                  dataNascimento: "1985-01-01",
-                  peso: 0,
-                  altura: 0,
-                  genero: "pn",
-                  maoDominante: "d",
-                },
-                "professional",
-              );
+              await auth.signupPatient({
+                username: username.trim(),
+                email,
+                password,
+              });
               onComplete();
-            } catch (e: any) {
-              if (e?.status === 409 || e?.status === 400) {
-                setSubmitError("E-mail ou usuário já cadastrado.");
-              } else {
-                setSubmitError("Erro ao criar conta. Tente novamente.");
-              }
+            } catch {
+              setSubmitError("Erro ao criar conta. Tente novamente.");
             }
           }}
           disabled={!formValid || auth.isLoading}
@@ -305,11 +306,18 @@ export function SignupScreen({
             height: 52,
             minHeight: 52,
             flexShrink: 0,
-            background: formValid && !auth.isLoading ? "var(--brand-button-grad)" : "var(--brand-border)",
-            color: formValid && !auth.isLoading ? "var(--brand-on-header)" : "var(--brand-text-faint)",
+            background:
+              formValid && !auth.isLoading
+                ? "var(--brand-accent-grad)"
+                : "var(--brand-border)",
+            color:
+              formValid && !auth.isLoading
+                ? "#FFFFFF"
+                : "var(--brand-text-faint)",
             fontSize: 15,
             fontWeight: 600,
-            cursor: formValid && !auth.isLoading ? "pointer" : "not-allowed",
+            cursor:
+              formValid && !auth.isLoading ? "pointer" : "not-allowed",
             opacity: formValid && !auth.isLoading ? 1 : 0.7,
           }}
         >

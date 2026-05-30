@@ -24,7 +24,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://powdering-discharge-washhouse.ngrok-free.dev',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

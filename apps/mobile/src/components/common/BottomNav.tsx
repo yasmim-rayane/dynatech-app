@@ -1,26 +1,37 @@
-import { Home, LineChart, Bell, User } from "lucide-react";
+import { Home, LineChart, User, Users } from "lucide-react";
+import type { UserRole } from "../../services/mockData";
 
-export type Tab = "home" | "history" | "reminders" | "profile";
+export type Tab = "home" | "history" | "profile" | "patients";
 
 export function BottomNav({
   active,
   onChange,
+  userRole,
 }: {
   active: Tab;
   onChange: (t: Tab) => void;
+  userRole?: UserRole | null;
 }) {
-  const items: { key: Tab; label: string; Icon: typeof Home }[] = [
-    { key: "home", label: "Início", Icon: Home },
-    { key: "history", label: "Histórico", Icon: LineChart },
-    { key: "reminders", label: "Lembretes", Icon: Bell },
-    { key: "profile", label: "Perfil", Icon: User },
+  const isPatient = userRole === "patient";
+
+  const allItems: { key: Tab; label: string; Icon: typeof Home; roles: UserRole[] }[] = [
+    { key: "home", label: "Início", Icon: Home, roles: ["professional", "patient"] },
+    { key: "history", label: "Histórico", Icon: LineChart, roles: ["professional", "patient"] },
+    { key: "patients", label: "Pacientes", Icon: Users, roles: ["professional"] },
+
+    { key: "profile", label: "Perfil", Icon: User, roles: ["professional", "patient"] },
   ];
+
+  const items = allItems.filter((item) =>
+    !userRole ? true : item.roles.includes(userRole),
+  );
+
   return (
     <nav
       className="flex justify-around items-end safe-bottom"
       style={{
         paddingTop: 8,
-        paddingBottom: 15,
+        paddingBottom: "max(env(safe-area-inset-bottom), 16px)",
         background: "var(--brand-card)",
         borderTop: "1px solid var(--brand-border)",
         backdropFilter: "blur(20px)",
@@ -65,7 +76,7 @@ export function BottomNav({
             </div>
             <span
               style={{
-                fontSize: 11,
+                fontSize: isPatient ? 12 : 11,
                 color: isActive ? "var(--brand-emerald)" : "var(--brand-text-faint)",
                 fontWeight: isActive ? 600 : 400,
                 letterSpacing: isActive ? "0.01em" : "normal",

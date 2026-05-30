@@ -9,6 +9,7 @@ export class BleService {
   private static onLiveUpdateCallback: ((currentKg: number) => void) | null = null;
   private static onDisconnectCallback: (() => void) | null = null;
   private static onConnectionStateChangeCallback: ((connected: boolean) => void) | null = null;
+  private static onEnabledChangeCallback: ((enabled: boolean) => void) | null = null;
 
   public static isConnected(): boolean {
     return this.device !== null;
@@ -31,6 +32,19 @@ export class BleService {
   public static async initialize(): Promise<void> {
     try {
       await BleClient.initialize({ androidNeverForLocation: true });
+      
+      // Monitora alterações do estado do bluetooth do aparelho (ligado/desligado)
+      await BleClient.startEnabledNotifications((enabled) => {
+        console.log(`Estado do Bluetooth alterado para: ${enabled ? 'Ligado' : 'Desligado'}`);
+        if (!enabled && this.device) {
+          // Se desligar o adaptador, força desconexão lógica
+          this.handleDisconnect(this.device.deviceId);
+        }
+        if (this.onEnabledChangeCallback) {
+          this.onEnabledChangeCallback(enabled);
+        }
+      });
+
     } catch (error) {
       console.error('Erro ao inicializar o BLE:', error);
       throw error;
@@ -209,5 +223,9 @@ export class BleService {
 
   public static onConnectionStateChange(callback: (connected: boolean) => void) {
     this.onConnectionStateChangeCallback = callback;
+  }
+
+  public static onEnabledChange(callback: (enabled: boolean) => void) {
+    this.onEnabledChangeCallback = callback;
   }
 }

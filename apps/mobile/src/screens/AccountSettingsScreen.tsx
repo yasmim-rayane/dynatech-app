@@ -26,11 +26,8 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
   const emailOk = EMAIL_RE.test(email);
   const nameOk = name.trim().length >= 2;
   const pwChecks = validatePassword(newPwd);
-  const pesoOk = peso.length > 0;
-  const alturaOk = altura.length > 0;
-  const maoOk = maoDominante !== "Selecione";
 
-  const formValid = nameOk && emailOk && pwChecks.valid && pesoOk && alturaOk && maoOk;
+  const formValid = nameOk && emailOk && pwChecks.valid;
 
   const inputStyle: React.CSSProperties = {
     background: "var(--brand-input-bg)",
@@ -105,60 +102,52 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
             )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Peso (kg)</label>
-              <div className="relative mt-1.5">
-                <Scale size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
-                <input
-                  inputMode="decimal"
-                  maxLength={6}
-                  value={peso}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-                    const parts = val.split(".");
-                    if (parts[0].length > 3) parts[0] = parts[0].slice(0, 3);
-                    if (parts.length > 1) parts[1] = parts[1].slice(0, 2);
-                    setPeso(parts.slice(0, 2).join("."));
-                  }}
-                  onBlur={() => { if(peso) setPeso(Number(peso).toFixed(2)) }}
-                  className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
-                  style={!pesoOk ? errorInputStyle : inputStyle}
-                />
+        {auth.isPatient && (
+          <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Peso (kg)</label>
+                <div className="relative mt-1.5 opacity-60">
+                  <Scale size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
+                  <input
+                    disabled
+                    value={peso}
+                    className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
-            </div>
-            <div>
-              <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Altura (cm)</label>
-              <div className="relative mt-1.5">
-                <Ruler size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
-                <input
-                  inputMode="numeric"
-                  maxLength={3}
-                  value={altura}
-                  onChange={(e) => setAltura(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                  className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
-                  style={!alturaOk ? errorInputStyle : inputStyle}
-                />
+              <div>
+                <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Altura (cm)</label>
+                <div className="relative mt-1.5 opacity-60">
+                  <Ruler size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
+                  <input
+                    disabled
+                    value={altura}
+                    className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
-            </div>
-        </div>
+          </div>
+        )}
 
-        <div>
-            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Mão dominante</label>
-            <div className="relative mt-1.5">
-              <Hand size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
-              <select
-                value={maoDominante}
-                onChange={(e) => setMaoDominante(e.target.value)}
-                className="w-full h-12 pl-11 pr-4 rounded-xl outline-none appearance-none transition-colors"
-                style={inputStyle}
-              >
-                <option>Direita</option>
-                <option>Esquerda</option>
-                <option>Ambidestro</option>
-              </select>
-            </div>
-        </div>
+        {auth.isPatient && (
+          <div>
+              <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>Mão dominante</label>
+              <div className="relative mt-1.5 opacity-60">
+                <Hand size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: "var(--brand-text-faint)" }} />
+                <input
+                  disabled
+                  value={maoDominante}
+                  className="w-full h-12 pl-11 pr-4 rounded-xl outline-none transition-colors"
+                  style={inputStyle}
+                />
+              </div>
+              <div className="mt-2 text-[11px] text-[var(--brand-text-muted)]">
+                * Para alterar seus dados biométricos, converse com seu profissional de saúde.
+              </div>
+          </div>
+        )}
 
         <div
           className="px-2 pt-2"
@@ -200,10 +189,6 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
               const payload: Record<string, any> = {};
               if (name !== auth.user?.name) payload.name = name.trim();
               if (email !== auth.user?.email) payload.email = email.trim();
-              if (peso !== (auth.user?.peso != null ? auth.user.peso.toFixed(2) : "")) payload.peso = Number(peso);
-              if (altura !== (auth.user?.altura != null ? String(auth.user.altura) : "")) payload.altura = Number(altura);
-              const backMao = maoToBack(maoDominante);
-              if (backMao !== auth.user?.maoDominante) payload.maoDominante = backMao;
               // Atualiza no servidor se houver mudanças
               if (Object.keys(payload).length > 0) {
                 await auth.updateUser(payload);

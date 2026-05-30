@@ -11,6 +11,7 @@ import {
 import { FileText, Table } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
+import { usePatients } from "../contexts/PatientsContext";
 import * as api from "../services/api";
 import type { ResultResponse } from "../services/api";
 import { generoToFront, maoToFront } from "../services/api";
@@ -58,16 +59,29 @@ export function HistoryScreen() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const { theme } = useTheme();
-  const { user, email } = useAuth();
+  const { email } = useAuth(); // (Opcional, caso a view do paciente use isso no futuro)
+  const { patients } = usePatients();
+  
+  // Seleciona o primeiro paciente por padrão, se houver
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(patients.length > 0 ? patients[0].id : "");
+  
+  const selectedPatient = useMemo(() => patients.find(p => p.id === selectedPatientId), [patients, selectedPatientId]);
+
   const [allResults, setAllResults] = useState<ResultResponse[]>([]);
 
   // Fetch results from API
   useEffect(() => {
-    if (!email) return;
-    api.getAllResults(email)
+    // Usa um e-mail default para fins de mock caso o paciente não tenha e-mail cadastrado
+    const patientEmail = selectedPatient?.email || "patient_mock@example.com";
+    if (!selectedPatientId) {
+      setAllResults([]);
+      return;
+    }
+    
+    api.getAllResults(patientEmail)
       .then(setAllResults)
       .catch(() => setAllResults([]));
-  }, [email]);
+  }, [selectedPatientId, selectedPatient]);
   
   const grid = theme === "dark" ? "#1F2A44" : "#E2E8F0";
   const tick = theme === "dark" ? "#94A3B8" : "#94A3B8";
@@ -143,20 +157,25 @@ export function HistoryScreen() {
     ? (palmarSub === "direita" ? "M\u00e3o Direita" : "M\u00e3o Esquerda")
     : `${PINCA_SUBS.find(s => s.key === pincaSub)!.label} (${pincaHand === "direita" ? "Dir." : "Esq."})`;
 
-  /* ── Dados do usu\u00e1rio (real) ── */
-  const userInfo = {
-    nome: user?.name ?? "--",
-    idade: user?.dataNascimento ? (() => {
-      const [y, m, d] = user.dataNascimento.split("-").map(Number);
-      const birth = new Date(y, m - 1, d);
-      const diff = Date.now() - birth.getTime();
-      return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000)) + " anos";
-    })() : "--",
-    genero: user?.genero ? generoToFront(user.genero) : "--",
-    maoDominante: user?.maoDominante ? maoToFront(user.maoDominante) : "--",
-    peso: user?.peso != null ? user.peso.toFixed(2) + " kg" : "--",
-    altura: user?.altura != null ? user.altura + " cm" : "--",
-  };
+  /* ── Dados do paciente selecionado ── */
+  const userInfo = useMemo(() => {
+    if (!selectedPatient) {
+      return { nome: "--", idade: "--", genero: "--", maoDominante: "--", peso: "--", altura: "--" };
+    }
+    return {
+      nome: selectedPatient.name,
+      idade: selectedPatient.dataNascimento ? (() => {
+        const [y, m, d] = selectedPatient.dataNascimento.split("-").map(Number);
+        const birth = new Date(y, m - 1, d);
+        const diff = Date.now() - birth.getTime();
+        return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000)) + " anos";
+      })() : "--",
+      genero: selectedPatient.genero ? generoToFront(selectedPatient.genero) : "--",
+      maoDominante: selectedPatient.maoDominante ? maoToFront(selectedPatient.maoDominante) : "--",
+      peso: selectedPatient.peso != null ? selectedPatient.peso.toFixed(2) + " kg" : "--",
+      altura: selectedPatient.altura != null ? selectedPatient.altura + " cm" : "--",
+    };
+  }, [selectedPatient]);
 
   /** Calcula cor baseada na diferença % entre dois valores */
   function diffColor(a: number, b: number): { color: [number, number, number]; label: string } {
@@ -468,8 +487,54 @@ export function HistoryScreen() {
           Histórico
         </h1>
         <p style={{ color: "var(--brand-text-muted)", fontSize: 13 }} className="mt-1">
-          Sua evolução ao longo do tempo
+          Selecione um paciente para visualizar os resultados
         </p>
+
+        {/* Patient Selector */}
+        <div className="mt-4">
+          <select
+            value={selectedPatientId}
+            onChange={(e) => setSelectedPatientId(e.target.value)}
+            className="w-full h-12 px-4 rounded-xl outline-none appearance-none transition-colors shadow-sm"
+            style={{ 
+              background: "var(--brand-card)", 
+              border: "1px solid var(--brand-border-soft)",
+              color: "var(--brand-text)",
+              fontSize: 14,
+              fontWeight: 600
+            }}
+          >
+            {patients.length === 0 ? (
+              <option value="">Nenhum paciente cadastrado</option>
+            ) : (
+              patients.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))
+            )}
+          </select>
+        </div>
+
+        {/* Última Medição do Paciente */}
+        {allResults.length > 0 && (
+          <div className="mt-4 p-4 rounded-2xl shadow-sm animate-fadeSlideDown" style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span style={{ color: "var(--brand-text)", fontSize: 14, fontWeight: 600 }}>Última Medição</span>
+              <span style={{ color: "var(--brand-text-faint)", fontSize: 12 }}>
+                {new Date(allResults[0].examDate).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl" style={{ background: "var(--brand-chip-bg)" }}>
+                <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 500 }}>Palmar Direita</div>
+                <div className="text-lg font-bold" style={{ color: "var(--brand-text)" }}>{allResults[0].palmMaxD ? allResults[0].palmMaxD.toFixed(1) : "--"} <span className="text-xs font-normal" style={{ color: "var(--brand-text-muted)" }}>kgf</span></div>
+              </div>
+              <div className="p-3 rounded-xl" style={{ background: "var(--brand-chip-bg)" }}>
+                <div style={{ color: "var(--brand-text-muted)", fontSize: 11, fontWeight: 500 }}>Palmar Esquerda</div>
+                <div className="text-lg font-bold" style={{ color: "var(--brand-text)" }}>{allResults[0].palmMaxE ? allResults[0].palmMaxE.toFixed(1) : "--"} <span className="text-xs font-normal" style={{ color: "var(--brand-text-muted)" }}>kgf</span></div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tipo Toggle */}
         <div className="flex gap-2 mt-5">

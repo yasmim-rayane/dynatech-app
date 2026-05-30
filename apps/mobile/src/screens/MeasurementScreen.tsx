@@ -9,7 +9,9 @@ import {
   Check,
   TrendingUp,
   Loader2,
+  BluetoothOff,
 } from "lucide-react";
+import { usePatients } from "../contexts/PatientsContext";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { usePreferences } from "../contexts/PreferencesContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -60,6 +62,8 @@ function playSuccessFeedback(soundOn: boolean, vibrationOn: boolean) {
 export function MeasurementScreen({ onBack }: { onBack: () => void }) {
   const { sound, vibration } = usePreferences();
   const { email } = useAuth();
+  const { patients, activePatientId } = usePatients();
+  const [isConnected, setIsConnected] = useState(BleService.isConnected());
   const [step, setStep] = useState<Step>("type");
   const [type, setType] = useState<Type | null>(null);
   const [side, setSide] = useState<Side | null>(null);
@@ -107,10 +111,39 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
       alert("Conexão com o dinamômetro foi perdida!");
     });
 
+    BleService.onConnectionStateChange((state) => setIsConnected(state));
+    BleService.onEnabledChange((enabled) => { if (!enabled) setIsConnected(false); });
+
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
   }, [sound, vibration]);
+
+  const activePatient = patients.find(p => p.id === activePatientId);
+
+  // Se não estiver conectado, retorna a tela de bloqueio
+  if (!isConnected) {
+    return (
+      <div className="min-h-full w-full flex flex-col items-center justify-center p-6 animate-fadeIn" style={{ background: "var(--brand-bg)" }}>
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "var(--brand-danger-soft)" }}>
+          <BluetoothOff size={40} style={{ color: "var(--brand-danger)" }} />
+        </div>
+        <h2 style={{ color: "var(--brand-text)", fontSize: 24, fontWeight: 700 }} className="mb-2 text-center">
+          Hardware Desconectado
+        </h2>
+        <p style={{ color: "var(--brand-text-muted)", fontSize: 15 }} className="text-center mb-8 max-w-[280px]">
+          Para realizar uma medição, é necessário estar conectado ao dispositivo Dyna Tech Grip.
+        </p>
+        <button
+          onClick={onBack}
+          className="w-full h-14 rounded-2xl flex items-center justify-center font-bold text-[15px] shadow-sm active:scale-95 transition-transform"
+          style={{ background: "var(--brand-border)", color: "var(--brand-text)" }}
+        >
+          Voltar
+        </button>
+      </div>
+    );
+  }
 
   async function startRun() {
     try {
@@ -223,6 +256,7 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             finger={finger}
             peak={peak}
             email={email}
+            activePatient={activePatient}
             onSave={onBack}
             onRetry={reset}
           />
@@ -575,6 +609,7 @@ function ResultStep({
   finger,
   peak,
   email,
+  activePatient,
   onSave,
   onRetry,
 }: {
@@ -583,6 +618,7 @@ function ResultStep({
   finger: Finger | null;
   peak: number;
   email: string;
+  activePatient: any;
   onSave: () => void;
   onRetry: () => void;
 }) {
@@ -674,8 +710,14 @@ function ResultStep({
           setSaving(true);
           setSaveError("");
           try {
-            // Monta o payload com base no tipo/lado/dedo
-            const payload: api.ResultCreatePayload = { email };
+            const patientEmail = activePatient?.email || "patient_mock@example.com";
+    
+            // Constrói payload dinâmico. O mock fará parse depois.
+            const payload: any = {
+              email: patientEmail,
+              examDate: new Date().toISOString(),
+            };
+            
             if (type === "grip") {
               // Envia 0 no lado não medido para passar na validação estrita do backend
               payload.palmMaxD = side === "right" ? Number(peak.toFixed(1)) : 0;
