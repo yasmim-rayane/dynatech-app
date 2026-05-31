@@ -10,7 +10,7 @@
 
 
 
-**all | GET | RequestParam String email**
+**/api/result/all | GET | RequestParam String email**
 
 "Retorna TODOS os resultados a partir do email"
 
@@ -46,7 +46,7 @@
 
 &#x20;   },
 
-&#x20;   
+&#x20;
 
 &#x20;   ...
 
@@ -412,7 +412,8 @@ Ex do JSON enviado para a request:
 
 }
 
-Obs: -> Aqui o back aceita criação de resultados desde que 1 dos exames (palmar ou pinça) tenha sido completo em sua totalidade
+Obs: -> O salvamento pode ser de um só ou alguns campo(s) também
+-> As medidas que não foram obtidas e não serão salvas podem ser deixadas como null (omitidas no JSON) ou 0
 
 
 
@@ -458,5 +459,43 @@ void -> retorna um Http status OK - 200 caso sucesso
 
 
 
+\-----------------------------------
 
+
+
+**/api/result/consolidate | POST | RequestParam String email**
+
+"Faz a seguinte operação no banco: Todos os registros do dia atual são substituídos por 1 registro com os valores médios de cada medida"
+
+
+
+Resposta: é retornado o JSON do registro com as medidas médias
+
+{
+
+&#x20;   "examDate": "2026-05-31T19:27:20.383309568",
+
+&#x20;   "id": 9,
+
+&#x20;   "palmMaxD": 50.866666666666674,
+
+&#x20;   "palmMaxE": 71.6,
+
+&#x20;   "pinchMaxD1": null,
+
+&#x20;   "pinchMaxD2": null,
+
+&#x20;   "pinchMaxD3": null,
+
+&#x20;   "pinchMaxD4": null,
+
+&#x20;   "pinchMaxE1": null,
+
+&#x20;   "pinchMaxE2": null,
+
+&#x20;   "pinchMaxE3": null,
+
+&#x20;   "pinchMaxE4": null
+
+}
 
