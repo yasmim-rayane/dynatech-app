@@ -56,6 +56,7 @@ export function PairingScreen({
   onBack?: () => void;
 }) {
   const { sound, vibration } = usePreferences();
+  const [alreadyConnected] = useState<boolean>(BleService.isConnected());
   const [devices, setDevices] = useState<{ device: BleDevice; rssi: number }[]>([]);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,8 @@ export function PairingScreen({
   const { addNotification } = useAppNotifications();
 
   useEffect(() => {
+    if (alreadyConnected) return;
+
     let isScanning = false;
     
     const scan = async () => {
@@ -145,10 +148,43 @@ export function PairingScreen({
         Mantenha seu dinamômetro próximo e ligado.
       </p>
 
-      <div
-        className="flex items-center justify-center my-8 relative"
-        style={{ height: 200 }}
-      >
+      {alreadyConnected ? (
+        <div className="flex flex-col items-center justify-center flex-1 py-10 animate-scaleIn">
+          <div
+            className="w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-lg"
+            style={{ background: "var(--brand-emerald-soft)" }}
+          >
+            <Check size={48} style={{ color: "var(--brand-emerald)" }} />
+          </div>
+          <h2 style={{ color: "var(--brand-text)", fontSize: 20, fontWeight: 700 }}>
+            Dispositivo já conectado
+          </h2>
+          <p
+            style={{ color: "var(--brand-text-muted)", fontSize: 14, textAlign: "center" }}
+            className="mt-2 mb-8 px-4"
+          >
+            O seu dinamômetro Dyna Tech Grip já está conectado e pronto para uso.
+          </p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-full py-3.5 rounded-xl font-semibold active:scale-95 transition-transform"
+              style={{
+                background: "var(--brand-emerald)",
+                color: "#FFFFFF",
+                fontSize: 15,
+              }}
+            >
+              Voltar ao início
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div
+            className="flex items-center justify-center my-8 relative"
+            style={{ height: 200 }}
+          >
         <span
           className="absolute rounded-full"
           style={{
@@ -254,6 +290,8 @@ export function PairingScreen({
           );
         })}
       </div>
+        </>
+      )}
     </div>
   );
 }

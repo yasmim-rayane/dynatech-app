@@ -289,7 +289,7 @@ function Shell() {
           className="scroll-y no-scrollbar"
           style={{
             height: "100%",
-            paddingBottom: showNav ? 80 : 0,
+            paddingBottom: showNav ? "calc(70px + max(env(safe-area-inset-bottom), 16px))" : 0,
           }}
         >
           {content}

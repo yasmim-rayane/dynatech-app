@@ -111,11 +111,13 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
       alert("Conexão com o dinamômetro foi perdida!");
     });
 
-    BleService.onConnectionStateChange((state) => setIsConnected(state));
-    BleService.onEnabledChange((enabled) => { if (!enabled) setIsConnected(false); });
+    const unsubConn = BleService.onConnectionStateChange((state) => setIsConnected(state));
+    const unsubEn = BleService.onEnabledChange((enabled) => { if (!enabled) setIsConnected(false); });
 
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
+      unsubConn();
+      unsubEn();
     };
   }, [sound, vibration]);
 

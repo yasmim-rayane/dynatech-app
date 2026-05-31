@@ -31,7 +31,7 @@ export function BottomNav({
       className="flex justify-around items-end safe-bottom"
       style={{
         paddingTop: 8,
-        paddingBottom: "max(env(safe-area-inset-bottom), 16px)",
+        paddingBottom: "calc(max(env(safe-area-inset-bottom), 16px) + 8px)",
         background: "var(--brand-card)",
         borderTop: "1px solid var(--brand-border)",
         backdropFilter: "blur(20px)",

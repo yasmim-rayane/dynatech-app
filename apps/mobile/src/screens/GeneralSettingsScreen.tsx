@@ -51,7 +51,10 @@ export function GeneralSettingsScreen({
   useEffect(() => {
     calculateCache();
     checkPerms();
-    BleService.onConnectionStateChange((state) => setBleConnected(state));
+    const unsubConn = BleService.onConnectionStateChange((state) => setBleConnected(state));
+    return () => {
+      unsubConn();
+    };
   }, []);
 
   async function checkPerms() {

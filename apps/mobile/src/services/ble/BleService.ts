@@ -8,8 +8,8 @@ export class BleService {
   private static onStatusCallback: ((isMeasuring: boolean) => void) | null = null;
   private static onLiveUpdateCallback: ((currentKg: number) => void) | null = null;
   private static onDisconnectCallback: (() => void) | null = null;
-  private static onConnectionStateChangeCallback: ((connected: boolean) => void) | null = null;
-  private static onEnabledChangeCallback: ((enabled: boolean) => void) | null = null;
+  private static onConnectionStateChangeCallbacks = new Set<(connected: boolean) => void>();
+  private static onEnabledChangeCallbacks = new Set<(enabled: boolean) => void>();
 
   public static isConnected(): boolean {
     return this.device !== null;
@@ -40,9 +40,7 @@ export class BleService {
           // Se desligar o adaptador, força desconexão lógica
           this.handleDisconnect(this.device.deviceId);
         }
-        if (this.onEnabledChangeCallback) {
-          this.onEnabledChangeCallback(enabled);
-        }
+        this.onEnabledChangeCallbacks.forEach(cb => cb(enabled));
       });
 
     } catch (error) {
@@ -91,9 +89,7 @@ export class BleService {
       this.device = device;
       console.log(`Conectado ao dispositivo: ${deviceId}`);
       
-      if (this.onConnectionStateChangeCallback) {
-        this.onConnectionStateChangeCallback(true);
-      }
+      this.onConnectionStateChangeCallbacks.forEach(cb => cb(true));
 
       // Inscreve para receber atualizações do RESULTADO
       await BleClient.startNotifications(
@@ -178,9 +174,7 @@ export class BleService {
       try {
         await BleClient.disconnect(this.device.deviceId);
         this.device = null;
-        if (this.onConnectionStateChangeCallback) {
-          this.onConnectionStateChangeCallback(false);
-        }
+        this.onConnectionStateChangeCallbacks.forEach(cb => cb(false));
       } catch (error) {
         console.error('Erro ao desconectar:', error);
       }
@@ -193,9 +187,7 @@ export class BleService {
   private static handleDisconnect(deviceId: string): void {
     console.log(`Dispositivo ${deviceId} desconectado.`);
     this.device = null;
-    if (this.onConnectionStateChangeCallback) {
-      this.onConnectionStateChangeCallback(false);
-    }
+    this.onConnectionStateChangeCallbacks.forEach(cb => cb(false));
     if (this.onDisconnectCallback) {
       this.onDisconnectCallback();
     }
@@ -222,10 +214,12 @@ export class BleService {
   }
 
   public static onConnectionStateChange(callback: (connected: boolean) => void) {
-    this.onConnectionStateChangeCallback = callback;
+    this.onConnectionStateChangeCallbacks.add(callback);
+    return () => this.onConnectionStateChangeCallbacks.delete(callback);
   }
 
   public static onEnabledChange(callback: (enabled: boolean) => void) {
-    this.onEnabledChangeCallback = callback;
+    this.onEnabledChangeCallbacks.add(callback);
+    return () => this.onEnabledChangeCallbacks.delete(callback);
   }
 }

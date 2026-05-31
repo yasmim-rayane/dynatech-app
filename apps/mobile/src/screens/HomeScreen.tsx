@@ -18,18 +18,46 @@ export function HomeScreen({
 }) {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { unreadCount } = useAppNotifications();
+  const { unreadCount, addNotification } = useAppNotifications();
   const [connected, setConnected] = useState(BleService.isConnected());
   const { patients } = usePatients();
 
   useEffect(() => {
-    BleService.onConnectionStateChange((state) => {
-      setConnected(state);
+    const unsubConn = BleService.onConnectionStateChange((state) => {
+      setConnected((prev) => {
+        if (prev && !state) {
+          addNotification({
+            title: "Conexão perdida",
+            body: "O dinamômetro foi desconectado. Por favor, conecte-o novamente.",
+            tone: "danger",
+            icon: "bluetooth",
+          });
+        }
+        return state;
+      });
     });
-    BleService.onEnabledChange((enabled) => {
-      if (!enabled) setConnected(false);
+
+    const unsubEnabled = BleService.onEnabledChange((enabled) => {
+      if (!enabled) {
+        setConnected((prev) => {
+          if (prev) {
+            addNotification({
+              title: "Bluetooth desativado",
+              body: "O dinamômetro perdeu a conexão. Ative o Bluetooth e conecte novamente.",
+              tone: "danger",
+              icon: "bluetooth",
+            });
+          }
+          return false;
+        });
+      }
     });
-  }, []);
+
+    return () => {
+      unsubConn();
+      unsubEnabled();
+    };
+  }, [addNotification]);
 
   const userName = user?.name ?? "Profissional";
   const firstName = userName.split(" ")[0];
@@ -79,7 +107,7 @@ export function HomeScreen({
         </div>
 
         <div
-          onClick={connected ? undefined : onOpenPairing}
+          onClick={onOpenPairing}
           className={`mt-5 flex items-center gap-2 rounded-full px-3 py-2 w-fit animate-fadeIn ${!connected ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
           style={{ 
             background: connected ? "var(--brand-emerald-soft)" : "var(--brand-danger-soft, rgba(239,68,68,0.15))", 

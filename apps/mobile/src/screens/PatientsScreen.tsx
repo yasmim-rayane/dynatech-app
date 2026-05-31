@@ -297,8 +297,9 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
       {/* FAB — Adicionar Paciente */}
       <button
         onClick={handleAdd}
-        className="fixed bottom-24 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+        className="fixed right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         style={{
+          bottom: "calc(96px + max(env(safe-area-inset-bottom), 0px))",
           background: "var(--brand-accent-grad)",
           zIndex: 40,
         }}
