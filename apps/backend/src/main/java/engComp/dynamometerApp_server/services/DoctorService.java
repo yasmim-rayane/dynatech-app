@@ -50,7 +50,7 @@ public class DoctorService {
         DoctorHasUser doctorHasUser = new DoctorHasUser();
         doctorHasUser.setDoctor(doctor);
         doctorHasUser.setUser(user);
-        doctorHasUser.setStatus("n");
+        doctorHasUser.setStatus("s");
 
         doctorHasUserRepository.save(doctorHasUser);
     }
@@ -65,6 +65,20 @@ public class DoctorService {
     }
 
     //PATCH
+    public void toggleDoctorHasUserStatus(String doctorEmail, String userEmail) {
+        DoctorHasUser doctorHasUser = doctorHasUserRepository
+                .findByDoctorEmailAndUserEmail(doctorEmail, userEmail)
+                .orElseThrow(() -> new RuntimeException("Vínculo não encontrado"));
+
+        if (doctorHasUser.getStatus().equals("s")) {
+            doctorHasUser.setStatus("n");
+        } else {
+            doctorHasUser.setStatus("s");
+        }
+
+        doctorHasUserRepository.save(doctorHasUser);
+    }
+
     public Optional<DoctorResponseDTO> updateDoctor(String email, DoctorUpdateDTO dto) {
         Optional<Doctor> doctorOptional = doctorRepository.findByEmail(email);
 
@@ -84,25 +98,25 @@ public class DoctorService {
         return doctorRepository.findByEmail(email);
     }
 
-    public List<DoctorHasUserResponseDTO> getDoctorsByUser(String email) {
-        if (userRepository.findByEmail(email).isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado com email: " + email);
-        }
-
-        return doctorHasUserRepository.findByUserEmail(email)
-                .stream()
-                .map(DoctorHasUserResponseDTO::new)
-                .toList();
-    }
-
     public List<UserResponseDTO> getUsersByDoctor(String doctorEmail) {
         if (doctorRepository.findByEmail(doctorEmail).isEmpty()) {
             throw new RuntimeException("Médico não encontrado com email: " + doctorEmail);
         }
 
-        return doctorHasUserRepository.findByDoctorEmail(doctorEmail)
+        return doctorHasUserRepository.findByDoctorEmailAndStatus(doctorEmail, "s")
                 .stream()
                 .map(dhu -> new UserResponseDTO(dhu.getUser()))
+                .toList();
+    }
+
+    public List<DoctorHasUserResponseDTO> getDoctorsByUser(String userEmail) {
+        if (userRepository.findByEmail(userEmail).isEmpty()) {
+            throw new RuntimeException("Usuário não encontrado com email: " + userEmail);
+        }
+
+        return doctorHasUserRepository.findByUserEmailAndStatus(userEmail, "s")
+                .stream()
+                .map(DoctorHasUserResponseDTO::new)
                 .toList();
     }
 }

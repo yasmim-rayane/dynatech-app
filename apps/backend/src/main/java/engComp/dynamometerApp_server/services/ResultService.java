@@ -115,6 +115,55 @@ public class ResultService {
 
         return resultado;
     }
+
+    public ResultResponseDTO consolidateDailyResults(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        List<Result> todayResults = resultRepository
+                .findByUserIdAndExamDateBetweenOrderByExamDateAsc(user.getId(), startOfDay, endOfDay);
+
+        if (todayResults.isEmpty()) {
+            throw new RuntimeException("Nenhum resultado encontrado para hoje");
+        }
+
+        // calcula média de cada campo desconsiderando null e 0
+        Result consolidated = new Result();
+        consolidated.setUser(user);
+        consolidated.setExamDate(LocalDateTime.now());
+
+        consolidated.setPalmMaxD(calcAverage(todayResults, Result::getPalmMaxD));
+        consolidated.setPalmMaxE(calcAverage(todayResults, Result::getPalmMaxE));
+        consolidated.setPinchMaxD1(calcAverage(todayResults, Result::getPinchMaxD1));
+        consolidated.setPinchMaxD2(calcAverage(todayResults, Result::getPinchMaxD2));
+        consolidated.setPinchMaxD3(calcAverage(todayResults, Result::getPinchMaxD3));
+        consolidated.setPinchMaxD4(calcAverage(todayResults, Result::getPinchMaxD4));
+        consolidated.setPinchMaxE1(calcAverage(todayResults, Result::getPinchMaxE1));
+        consolidated.setPinchMaxE2(calcAverage(todayResults, Result::getPinchMaxE2));
+        consolidated.setPinchMaxE3(calcAverage(todayResults, Result::getPinchMaxE3));
+        consolidated.setPinchMaxE4(calcAverage(todayResults, Result::getPinchMaxE4));
+
+        // deleta todos os registros do dia
+        resultRepository.deleteAll(todayResults);
+
+        // salva o registro consolidado
+        return new ResultResponseDTO(resultRepository.save(consolidated));
+    }
+
+    private Double calcAverage(List<Result> results, java.util.function.Function<Result, Double> getter) {
+        List<Double> values = results.stream()
+                .map(getter)
+                .filter(v -> v != null && v > 0)
+                .toList();
+
+        if (values.isEmpty()) return null;
+
+        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+    }
+
     //POST
     public ResultResponseDTO createResult(ResultCreateDTO dto) {
         User user = userRepository.findByEmail(dto.getEmail())

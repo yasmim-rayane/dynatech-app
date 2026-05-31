@@ -80,6 +80,7 @@ public class PasswordResetService {
     }
 
     // Mudar senha
+    @Transactional
     public void resetPassword(String email, String code, String newPassword) {
         if (!validateCode(email, code)) {
             throw new RuntimeException("Código inválido ou expirado");

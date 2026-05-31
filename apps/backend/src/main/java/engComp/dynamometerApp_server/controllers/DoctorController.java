@@ -64,6 +64,15 @@ public class DoctorController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/toggleStatus")
+    public ResponseEntity<Void> toggleStatus(
+            @RequestParam String doctorEmail,
+            @RequestParam String userEmail) {
+        logger.info("Toggling status for doctor: " + doctorEmail + " and user: " + userEmail);
+        doctorService.toggleDoctorHasUserStatus(doctorEmail, userEmail);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/addUser")
     public ResponseEntity<Void> addUser(
             @RequestParam String doctorEmail,
