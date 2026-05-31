@@ -1,6 +1,7 @@
 package engComp.dynamometerApp_server.services;
 
 import engComp.dynamometerApp_server.entities.PasswordResetToken;
+import engComp.dynamometerApp_server.repositories.DoctorRepository;
 import engComp.dynamometerApp_server.repositories.PasswordResetTokenRepository;
 import engComp.dynamometerApp_server.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +29,20 @@ public class PasswordResetService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private DoctorRepository doctorRepository;
+
     private static final Logger logger = Logger.getLogger(PasswordResetService.class.getName());
 
     // Gerar Código e Enviar
     @Transactional
     public void sendResetCode(String email) {
         //email existe?
-        if (userRepository.findByEmail(email).isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado com email: " + email);
+        boolean isUser = userRepository.findByEmail(email).isPresent();
+        boolean isDoctor = doctorRepository.findByEmail(email).isPresent();
+
+        if (!isUser && !isDoctor) {
+            throw new RuntimeException("Email não encontrado: " + email);
         }
 
         // deleta token se já existe token para o email passado
@@ -73,18 +80,23 @@ public class PasswordResetService {
     }
 
     // Mudar senha
-    @Transactional
     public void resetPassword(String email, String code, String newPassword) {
         if (!validateCode(email, code)) {
             throw new RuntimeException("Código inválido ou expirado");
         }
 
+        //User
         userRepository.findByEmail(email).ifPresent(user -> {
-            user.setPassword(passwordEncoder.encode(newPassword));
+            user.setPassword(newPassword);
             userRepository.save(user);
         });
 
-        // deleta o token, pois a operação com ele foi completa
+        //Doctor
+        doctorRepository.findByEmail(email).ifPresent(doctor -> {
+            doctor.setPassword(newPassword);
+            doctorRepository.save(doctor);
+        });
+
         tokenRepository.deleteByEmail(email);
     }
 

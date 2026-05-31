@@ -21,7 +21,6 @@ public class UserCreateDTO {
     @Email(message = "Email inválido")
     private String email;
 
-    @NotBlank(message = "Senha obrigatória")
     @Size(max = 12, message = "Senha deve ter no máximo 12 caracteres")
     private String password;
 

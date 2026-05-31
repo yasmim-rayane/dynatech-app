@@ -1,6 +1,8 @@
 package engComp.dynamometerApp_server.services;
 
+import engComp.dynamometerApp_server.dto.DoctorHasUserResponseDTO;
 import engComp.dynamometerApp_server.dto.UserUpdateDTO;
+import engComp.dynamometerApp_server.repositories.DoctorHasUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import engComp.dynamometerApp_server.repositories.UserRepository;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 

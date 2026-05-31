@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` VARCHAR(90) NOT NULL,
   `userName` VARCHAR(15) NOT NULL UNIQUE,
   `email` VARCHAR(45) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(12),
   `dataNascimento` DATE NOT NULL,
   `peso` DECIMAL(5,2) NOT NULL,
   `genero` ENUM('m', 'f', 'ou', 'pn') NOT NULL,
@@ -39,3 +39,20 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     code        VARCHAR(6)   NOT NULL,
     expiresAt   DATETIME     NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS doctors (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(90)  NOT NULL,
+    userName    VARCHAR(15)  NOT NULL UNIQUE,
+    email       VARCHAR(45)  NOT NULL UNIQUE,
+    password    VARCHAR(12)  NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS DoctorHasUser (
+    idDoctor INT NOT NULL,
+    idUser INT NOT NULL,
+    status ENUM('s', 'n') NOT NULL DEFAULT 'n',
+    PRIMARY KEY (idDoctor, idUser),
+    FOREIGN KEY (idDoctor) REFERENCES doctors(id),
+    FOREIGN KEY (idUser)   REFERENCES users(id)
+    );
