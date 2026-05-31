@@ -88,13 +88,13 @@ public class PasswordResetService {
 
         //User
         userRepository.findByEmail(email).ifPresent(user -> {
-            user.setPassword(newPassword);
+            user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
         });
 
         //Doctor
         doctorRepository.findByEmail(email).ifPresent(doctor -> {
-            doctor.setPassword(newPassword);
+            doctor.setPassword(passwordEncoder.encode(newPassword));
             doctorRepository.save(doctor);
         });
 
