@@ -28,7 +28,7 @@ O projeto também se baseia em decisões arquiteturais e atributos de qualidade 
 
 ### Frontend (Mobile & Web)
 - **Core:** React 18, TypeScript, Tailwind CSS (via `@tailwindcss/vite` e `tw-animate-css`).
-- **Gerenciamento de Estado:** React Context API (para Autenticação, Notificações, Tema e Preferências).
+- **Gerenciamento de Estado:** React Context API (para Autenticação, Tema e Preferências).
 - **Ícones e UI:** Lucide React.
 - **Visualização de Dados:** Recharts (Gráficos do histórico de medições).
 - **Exportação de Relatórios:** `jspdf` e `jspdf-autotable` para PDF; `xlsx` para planilhas.
