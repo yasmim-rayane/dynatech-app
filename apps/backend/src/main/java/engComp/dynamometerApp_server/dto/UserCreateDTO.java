@@ -10,7 +10,6 @@ public class UserCreateDTO {
     @NotBlank(message = "Nome obrigatório")
     private String name;
 
-    @NotBlank(message = "Username obrigatório")
     @Size(max = 15, message = "Username deve ter no máximo 15 caracteres")
     private String userName;
 

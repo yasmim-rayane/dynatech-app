@@ -19,10 +19,15 @@ export function HomeScreen({
 }) {
   const [showHealthyInfo, setShowHealthyInfo] = useState(false);
   const { theme } = useTheme();
+<<<<<<< Updated upstream
   const { user, email } = useAuth();
   const [lastResult, setLastResult] = useState<ResultResponse | null>(null);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStatsResponse | null>(null);
   const [weeklyResults, setWeeklyResults] = useState<ResultResponse[]>([]);
+=======
+  const { user, doctorData } = useAuth();
+  const { unreadCount, addNotification } = useAppNotifications();
+>>>>>>> Stashed changes
   const [connected, setConnected] = useState(BleService.isConnected());
   const { unreadCount } = useAppNotifications();
 
@@ -46,6 +51,7 @@ export function HomeScreen({
       .catch(() => setWeeklyResults([]));
   }, [email]);
 
+<<<<<<< Updated upstream
   /** Conta quantos resultados da semana tiveram um campo específico > 0 */
   function countSessions(field: keyof ResultResponse): number {
     return weeklyResults.filter(r => {
@@ -55,6 +61,9 @@ export function HomeScreen({
   }
 
   const userName = user?.name ?? "Usuário";
+=======
+  const userName = doctorData?.name || user?.name || "Profissional";
+>>>>>>> Stashed changes
   const firstName = userName.split(" ")[0];
 
   // Hora do dia para saudação
@@ -180,9 +189,29 @@ export function HomeScreen({
       <div className="px-5 -mt-14 space-y-4 pb-6">
         {/* Palmar — Mão Direita e Esquerda lado a lado */}
         <div className="grid grid-cols-2 gap-3 animate-fadeSlideUp" style={{ animationDelay: "0.1s" }}>
+<<<<<<< Updated upstream
           <MiniMeasurementCard label="Palmar Direita" value={palmD != null ? palmD.toFixed(1) : "--"} unit="kgf" delta="" Icon={Hand} accentVar="--brand-emerald" />
           <MiniMeasurementCard label="Palmar Esquerda" value={palmE != null ? palmE.toFixed(1) : "--"} unit="kgf" delta="" Icon={Hand} accentVar="--brand-emerald" mirror />
         </div>
+=======
+          <div
+            className="rounded-2xl p-4 shadow-md flex flex-col items-center justify-center text-center"
+            style={{
+              background: "var(--brand-card)",
+              border: "1px solid var(--brand-border-soft)",
+            }}
+          >
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ background: "var(--brand-emerald-soft)" }}>
+              <Users size={20} style={{ color: "var(--brand-emerald)" }} />
+            </div>
+            <span style={{ color: "var(--brand-text)", fontSize: 24, fontWeight: 700 }}>
+              {patients.filter((p) => !p.inativo).length}
+            </span>
+            <span style={{ color: "var(--brand-text-muted)", fontSize: 12, fontWeight: 500 }}>
+              Pacientes ativos
+            </span>
+          </div>
+>>>>>>> Stashed changes
 
         {/* Pinça — por dedo */}
         <div className="rounded-2xl p-4 shadow-md animate-fadeSlideUp" style={{ background: "var(--brand-card)", border: "1px solid var(--brand-border-soft)", animationDelay: "0.2s" }}>

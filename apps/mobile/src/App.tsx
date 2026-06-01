@@ -29,6 +29,22 @@ function Shell() {
   const remindersStore = useReminders();
   const { addNotification } = useAppNotifications();
 
+<<<<<<< Updated upstream
+=======
+  // Auth context — para acessar userRole
+  const auth = useAuth();
+  const { userRole, isProfessional, isPatient } = auth;
+
+  // Auto-login / Logout observer
+  React.useEffect(() => {
+    if (auth.email && stage === "login") {
+      setStage("app");
+    } else if (!auth.email && stage === "app") {
+      setStage("login");
+    }
+  }, [auth.email, stage]);
+
+>>>>>>> Stashed changes
   // Escutar notificações locais que disparam (lembretes agendados)
   React.useEffect(() => {
     import("@capacitor/local-notifications").then(({ LocalNotifications }) => {

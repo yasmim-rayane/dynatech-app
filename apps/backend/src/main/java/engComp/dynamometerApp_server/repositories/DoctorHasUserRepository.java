@@ -10,5 +10,9 @@ public interface DoctorHasUserRepository extends JpaRepository<DoctorHasUser, In
     boolean existsByDoctorIdAndUserId(Integer doctorId, Integer userId);
     List<DoctorHasUser> findByUserEmailAndStatus(String email, String status);
     List<DoctorHasUser> findByDoctorEmailAndStatus(String email, String status);
+<<<<<<< Updated upstream
+=======
+    List<DoctorHasUser> findByDoctorEmail(String email);
+>>>>>>> Stashed changes
     Optional<DoctorHasUser> findByDoctorEmailAndUserEmail(String doctorEmail, String userEmail);
 }

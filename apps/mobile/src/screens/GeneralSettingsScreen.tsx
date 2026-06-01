@@ -34,7 +34,7 @@ export function GeneralSettingsScreen({
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
   const { sound, vibration, setSound, setVibration } = usePreferences();
-  const { email } = useAuth();
+  const { email, isPatient } = useAuth();
   const [autoSync, setAutoSync] = useState(true);
   const [cacheSize, setCacheSize] = useState<string>("Calculando...");
   const [isClearing, setIsClearing] = useState(false);
@@ -158,7 +158,10 @@ export function GeneralSettingsScreen({
         </h2>
       </div>
 
-      <div className="px-5 pt-4 pb-10 space-y-6">
+      <div 
+        className="px-5 pt-4 space-y-6"
+        style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <Group title="Aparência" delay={0}>
           <ToggleRow
             Icon={Moon}
@@ -169,14 +172,16 @@ export function GeneralSettingsScreen({
           />
         </Group>
 
-        <Group title="Dispositivo" delay={0.05}>
-          <NavRow
-            Icon={Bluetooth}
-            label="Parear dinamômetro"
-            value={bleConnected ? "Conectado" : "Desconectado"}
-            onClick={onOpenPairing}
-          />
-        </Group>
+        {!isPatient && (
+          <Group title="Dispositivo" delay={0.05}>
+            <NavRow
+              Icon={Bluetooth}
+              label="Parear dinamômetro"
+              value={bleConnected ? "Conectado" : "Desconectado"}
+              onClick={onOpenPairing}
+            />
+          </Group>
+        )}
 
         <Group title="Preferências" delay={0.1}>
           <NavRow Icon={Globe} label="Idioma" value="Português (BR)" hideArrow />
@@ -201,13 +206,15 @@ export function GeneralSettingsScreen({
         </Group>
 
         <Group title="Dados" delay={0.2}>
-          <ToggleRow
-            Icon={Cloud}
-            label="Sincronização automática"
-            sub="Envia medições para a nuvem ao conectar"
-            on={autoSync}
-            onChange={() => setAutoSync((v) => !v)}
-          />
+          {!isPatient && (
+            <ToggleRow
+              Icon={Cloud}
+              label="Sincronização automática"
+              sub="Envia medições para a nuvem ao conectar"
+              on={autoSync}
+              onChange={() => setAutoSync((v) => !v)}
+            />
+          )}
           <NavRow 
             Icon={Trash2} 
             label={isClearing ? "Limpando..." : "Limpar cache"} 
@@ -218,12 +225,14 @@ export function GeneralSettingsScreen({
         </Group>
 
         <Group title="Permissões" delay={0.22}>
-          <NavRow
-            Icon={Bluetooth}
-            label="Bluetooth"
-            value={btPerm}
-            onClick={handleRequestBt}
-          />
+          {!isPatient && (
+            <NavRow
+              Icon={Bluetooth}
+              label="Bluetooth"
+              value={btPerm}
+              onClick={handleRequestBt}
+            />
+          )}
           <NavRow
             Icon={Bell}
             label="Notificações"

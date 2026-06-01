@@ -18,7 +18,7 @@ public class NgrokStarter implements ApplicationListener<ApplicationReadyEvent> 
                     .start()
                     .waitFor();
 
-            ngrokProcess = new ProcessBuilder("ngrok", "http", "8080")
+            ngrokProcess = new ProcessBuilder("ngrok", "http", "--domain=powdering-discharge-washhouse.ngrok-free.dev", "8080")
                     .start();
 
             System.out.println("ngrok iniciado!");

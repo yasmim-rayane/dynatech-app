@@ -45,11 +45,10 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    /**
-     * Verifica se a senha em texto puro confere com o hash armazenado.
-     * Também suporta senhas legadas em texto puro (migração gradual).
-     */
     public boolean checkPassword(String rawPassword, String storedPassword) {
+        if (storedPassword == null) {
+            return false;
+        }
         // Se a senha armazenada começa com "$2a$" ou "$2b$", é um hash BCrypt
         if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$")) {
             return passwordEncoder.matches(rawPassword, storedPassword);

@@ -56,6 +56,12 @@ public class DoctorService {
     }
 
     public boolean checkPassword(String rawPassword, String storedPassword) {
+<<<<<<< Updated upstream
+=======
+        if (storedPassword == null) {
+            return false;
+        }
+>>>>>>> Stashed changes
         // Se a senha armazenada começa com "$2a$" ou "$2b$", é um hash BCrypt
         if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$")) {
             return passwordEncoder.matches(rawPassword, storedPassword);
@@ -103,9 +109,15 @@ public class DoctorService {
             throw new RuntimeException("Médico não encontrado com email: " + doctorEmail);
         }
 
+<<<<<<< Updated upstream
         return doctorHasUserRepository.findByDoctorEmailAndStatus(doctorEmail, "s")
                 .stream()
                 .map(dhu -> new UserResponseDTO(dhu.getUser()))
+=======
+        return doctorHasUserRepository.findByDoctorEmail(doctorEmail)
+                .stream()
+                .map(dhu -> new UserResponseDTO(dhu.getUser(), dhu.getStatus()))
+>>>>>>> Stashed changes
                 .toList();
     }
 

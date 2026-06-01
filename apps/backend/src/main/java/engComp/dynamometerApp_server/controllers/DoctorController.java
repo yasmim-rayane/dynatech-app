@@ -28,6 +28,16 @@ public class DoctorController {
     private UserService userService;
 
     //GET
+<<<<<<< Updated upstream
+=======
+    @GetMapping
+    public ResponseEntity<DoctorResponseDTO> getDoctorByEmail(@RequestParam String email) {
+        logger.info("Getting doctor by email: " + email);
+        return doctorService.getDoctorEntityByEmail(email)
+                .map(doctor -> ResponseEntity.ok(new DoctorResponseDTO(doctor)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+>>>>>>> Stashed changes
     @GetMapping("/doctors")
     public ResponseEntity<List<DoctorHasUserResponseDTO>> getDoctorsByUser(@RequestParam String email) {
         logger.info("Getting doctors for user: " + email);

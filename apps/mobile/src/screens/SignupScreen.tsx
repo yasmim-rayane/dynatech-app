@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
+<<<<<<< Updated upstream
 import { ChevronLeft, AlertCircle, CheckCircle2, Calendar, Loader2 } from "lucide-react";
+=======
+import { ChevronLeft, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
+>>>>>>> Stashed changes
 import { useAuth } from "../contexts/AuthContext";
 import { generoToBack, maoToBack, dateBrToIso } from "../services/api";
 
@@ -53,6 +57,8 @@ export function SignupScreen({
   const [genero, setGenero] = useState("Selecione");
   const [maoDominante, setMaoDominante] = useState("Selecione");
   const [submitError, setSubmitError] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   /* Campos "tocados" — exibem erro somente após interação */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -216,16 +222,26 @@ export function SignupScreen({
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Senha
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => touch("password")}
-            placeholder="••••••••"
-            maxLength={12}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.password && !pwChecks.valid ? errorInputStyle : inputStyle}
-          />
+          <div className="relative mt-1.5">
+            <input
+              type={showPwd ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => touch("password")}
+              placeholder="••••••••"
+              maxLength={12}
+              className="w-full h-12 pl-4 pr-11 rounded-xl outline-none"
+              style={touched.password && !pwChecks.valid ? errorInputStyle : inputStyle}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPwd((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--brand-text-faint)" }}
+            >
+              {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {/* Checklist de senha — aparece assim que começa a digitar */}
           {(touched.password || password.length > 0) && (
             <div className="mt-2 space-y-1">
@@ -243,16 +259,26 @@ export function SignupScreen({
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Confirmar senha
           </label>
-          <input
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            onBlur={() => touch("confirm")}
-            placeholder="••••••••"
-            maxLength={12}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.confirm && !confirmOk ? errorInputStyle : inputStyle}
-          />
+          <div className="relative mt-1.5">
+            <input
+              type={showConfirm ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              onBlur={() => touch("confirm")}
+              placeholder="••••••••"
+              maxLength={12}
+              className="w-full h-12 pl-4 pr-11 rounded-xl outline-none"
+              style={touched.confirm && !confirmOk ? errorInputStyle : inputStyle}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--brand-text-faint)" }}
+            >
+              {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {touched.confirm && confirm.length > 0 && !confirmOk && (
             <div style={errorTextStyle}>
               <AlertCircle size={12} /> As senhas não coincidem
@@ -415,7 +441,7 @@ export function SignupScreen({
           paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 4,
-          paddingBottom: 48,
+          paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
           background:
             "linear-gradient(to top, var(--brand-card) 70%, transparent)",
         }}
@@ -438,6 +464,7 @@ export function SignupScreen({
             if (!formValid || auth.isLoading) return;
             setSubmitError("");
             try {
+<<<<<<< Updated upstream
               await auth.signup({
                 name: name.trim(),
                 username: username.trim(),
@@ -448,6 +475,13 @@ export function SignupScreen({
                 altura: Number(altura),
                 genero: generoToBack(genero),
                 maoDominante: maoToBack(maoDominante),
+=======
+              await auth.signupDoctor({
+                name: name.trim(),
+                userName: username.trim(),
+                email: email.trim(),
+                password,
+>>>>>>> Stashed changes
               });
               onComplete();
             } catch (e: any) {

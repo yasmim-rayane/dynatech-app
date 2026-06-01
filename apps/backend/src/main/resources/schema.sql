@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(90) NOT NULL,
-  `userName` VARCHAR(15) NOT NULL UNIQUE,
+  `userName` VARCHAR(15) UNIQUE,
   `email` VARCHAR(45) NOT NULL UNIQUE,
   `password` VARCHAR(12),
   `dataNascimento` DATE NOT NULL,

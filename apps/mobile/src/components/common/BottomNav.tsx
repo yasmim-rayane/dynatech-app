@@ -1,4 +1,9 @@
+<<<<<<< Updated upstream
 import { Home, LineChart, Bell, User } from "lucide-react";
+=======
+import { Home, LineChart, User, Users } from "lucide-react";
+import type { UserRole } from "../../contexts/AuthContext";
+>>>>>>> Stashed changes
 
 export type Tab = "home" | "history" | "reminders" | "profile";
 
