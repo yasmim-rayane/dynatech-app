@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ResultRepository extends JpaRepository<Result,Integer> {
     @Query("SELECT r FROM Result r WHERE r.user.email = :email ORDER BY r.examDate DESC LIMIT :quantidade")
@@ -20,7 +21,10 @@ public interface ResultRepository extends JpaRepository<Result,Integer> {
             @Param("d1") LocalDateTime d1,
             @Param("d2") LocalDateTime d2);
 
+
     List<Result> findByUserEmailOrderByExamDateDesc(String email);
+
+    List<Result> findByUserIdAndExamDateBetweenOrderByExamDateAsc(int userId, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT " +
             "COUNT(r) as count, " +

@@ -77,6 +77,12 @@ public class ResultController {
         return ResponseEntity.status(HttpStatus.OK).body(stats);
     }
 
+    @PostMapping("/consolidate")
+    public ResponseEntity<ResultResponseDTO> consolidateDailyResults(@RequestParam String email) {
+        logger.info("Consolidating daily results for user: " + email);
+        return ResponseEntity.ok(resultService.consolidateDailyResults(email));
+    }
+
     //Métodos POST
     @PostMapping("/create")
     public ResponseEntity<ResultResponseDTO> createResult(@RequestBody @Valid ResultCreateDTO dto) {
