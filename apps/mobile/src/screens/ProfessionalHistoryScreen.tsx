@@ -50,7 +50,7 @@ const d30n = ["Dia 1","Dia 5","Dia 10","Dia 15","Dia 20","Dia 25","Dia 30"];
 const d60n = ["Sem. 1","Sem. 2","Sem. 3","Sem. 4","Sem. 5","Sem. 6","Sem. 7","Sem. 8"];
 const dcn  = ["Med. 1","Med. 2","Med. 3","Med. 4","Med. 5"];
 
-export function HistoryScreen() {
+export function ProfessionalHistoryScreen() {
   const [type, setType] = useState<ForceType>("palmar");
   const [palmarSub, setPalmarSub] = useState<PalmarSub>("direita");
   const [pincaHand, setPincaHand] = useState<PincaHand>("direita");

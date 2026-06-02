@@ -6,7 +6,7 @@ import { useAppNotifications } from "../contexts/NotificationsContext";
 import { BleService } from "../services/ble/BleService";
 import { usePatients } from "../contexts/PatientsContext";
 
-export function HomeScreen({
+export function ProfessionalHomeScreen({
   onOpenNotifications,
   onOpenPairing,
   onGoToPatients,

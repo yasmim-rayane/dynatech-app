@@ -19,7 +19,7 @@ function validatePassword(pw: string) {
 
 /* ── Componente ────────────────────────────────────────────── */
 
-export function SignupScreen({
+export function ProfessionalSignupScreen({
   onBack,
   onComplete,
 }: {

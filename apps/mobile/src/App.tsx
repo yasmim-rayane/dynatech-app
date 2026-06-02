@@ -5,12 +5,12 @@ import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { PreferencesProvider } from "./contexts/PreferencesContext";
 import { NotificationsProvider, useAppNotifications } from "./contexts/NotificationsContext";
 import { LoginScreen } from "./screens/LoginScreen";
-import { SignupScreen } from "./screens/SignupScreen";
+import { ProfessionalSignupScreen } from "./screens/ProfessionalSignupScreen";
 import { ForgotScreen } from "./screens/ForgotScreen";
 import { PairingScreen } from "./screens/PairingScreen";
 import { TutorialScreen } from "./screens/TutorialScreen";
-import { HomeScreen } from "./screens/HomeScreen";
-import { HistoryScreen } from "./screens/HistoryScreen";
+import { ProfessionalHomeScreen } from "./screens/ProfessionalHomeScreen";
+import { ProfessionalHistoryScreen } from "./screens/ProfessionalHistoryScreen";
 
 import { PatientProfileScreen } from "./screens/PatientProfileScreen";
 import { ProfessionalProfileScreen } from "./screens/ProfessionalProfileScreen";
@@ -138,7 +138,7 @@ function Shell() {
       />
     );
   } else if (stage === "signup") {
-    content = <SignupScreen onComplete={() => setStage("tutorial")} onBack={() => setStage("role-select")} />;
+    content = <ProfessionalSignupScreen onComplete={() => setStage("tutorial")} onBack={() => setStage("role-select")} />;
   } else if (stage === "patient-email") {
     content = (
       <PatientEmailScreen
@@ -220,14 +220,14 @@ function Shell() {
       // ── View do Profissional (Acesso Total) ──
       if (tab === "home") {
         inner = (
-          <HomeScreen
+          <ProfessionalHomeScreen
             onOpenNotifications={() => setSub("notifications")}
             onOpenPairing={() => setSub("pairing")}
             onGoToPatients={() => setTab("patients")}
           />
         );
       } else if (tab === "history") {
-        inner = <HistoryScreen />;
+        inner = <ProfessionalHistoryScreen />;
       } else if (tab === "patients") {
         inner = <PatientsScreen onStartMeasurement={() => setSub("measure")} />;
 
