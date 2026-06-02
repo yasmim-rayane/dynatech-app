@@ -34,7 +34,8 @@ export function ProfileScreen({
   const isDark = theme === "dark";
   const { user, doctorData, email: authEmail } = useAuth();
 
-<<<<<<< Updated upstream:apps/mobile/src/screens/ProfileScreen.tsx
+  const isPatient = !!user && !doctorData;
+
   // Calcula idade a partir de dataNascimento
   const age = user?.dataNascimento ? (() => {
     const [y, m, d] = user.dataNascimento.split("-").map(Number);
@@ -43,19 +44,13 @@ export function ProfileScreen({
     return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
   })() : null;
 
-  const userName = user?.name ?? "Usuário";
-  const userInitials = userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const userEmail = user?.email ?? "";
-  const userUsername = user?.username ?? "";
-  const userPeso = user?.peso != null ? `${user.peso.toFixed(2)} kg` : "--";
-  const userAltura = user?.altura != null ? `${user.altura} cm` : "--";
-  const userMao = user?.maoDominante ? maoToFront(user.maoDominante) : "--";
-=======
   const userName = doctorData?.name || user?.name || "Profissional";
   const userInitials = userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const userEmail = doctorData?.email || user?.email || authEmail || "";
   const userUsername = doctorData?.userName || user?.username || "";
->>>>>>> Stashed changes:apps/mobile/src/screens/ProfessionalProfileScreen.tsx
+  const userPeso = user?.peso != null ? `${user.peso.toFixed(2)} kg` : "--";
+  const userAltura = user?.altura != null ? `${user.altura} cm` : "--";
+  const userMao = user?.maoDominante ? maoToFront(user.maoDominante) : "--";
 
   type Item = {
     Icon: typeof User;
@@ -63,17 +58,25 @@ export function ProfileScreen({
     value?: string;
     onClick?: () => void;
   };
-  const sections: { title: string; items: Item[] }[] = [
-    {
-      title: "Configurações de conta",
-      items: [
+  const accountItems: Item[] = isPatient
+    ? [
         { Icon: User, label: "Nome", value: userName, onClick: onOpenAccount },
         { Icon: Scale, label: "Peso", value: userPeso, onClick: onOpenAccount },
         { Icon: Ruler, label: "Altura", value: userAltura, onClick: onOpenAccount },
         { Icon: Hand, label: "Mão dominante", value: userMao, onClick: onOpenAccount },
         { Icon: Mail, label: "E-mail", value: userEmail, onClick: onOpenAccount },
         { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
-      ],
+      ]
+    : [
+        { Icon: User, label: "Nome", value: userName, onClick: onOpenAccount },
+        { Icon: Mail, label: "E-mail", value: userEmail, onClick: onOpenAccount },
+        { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
+      ];
+
+  const sections: { title: string; items: Item[] }[] = [
+    {
+      title: "Configurações de conta",
+      items: accountItems,
     },
     {
       title: "Configurações do app",

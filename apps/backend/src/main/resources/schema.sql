@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` VARCHAR(90) NOT NULL,
   `userName` VARCHAR(15) UNIQUE,
   `email` VARCHAR(45) NOT NULL UNIQUE,
-  `password` VARCHAR(12),
+  `password` VARCHAR(255),
   `dataNascimento` DATE NOT NULL,
   `peso` DECIMAL(5,2) NOT NULL,
   `genero` ENUM('m', 'f', 'ou', 'pn') NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS doctors (
     name        VARCHAR(90)  NOT NULL,
     userName    VARCHAR(15)  NOT NULL UNIQUE,
     email       VARCHAR(45)  NOT NULL UNIQUE,
-    password    VARCHAR(12)  NOT NULL
+    password    VARCHAR(255)  NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS DoctorHasUser (
@@ -62,3 +62,7 @@ SELECT 'Usuario Teste', 'teste', 'teste@dynatech.com', '123456', '2000-01-01', 7
     WHERE NOT EXISTS (
   SELECT 1 FROM users WHERE email = 'teste@dynatech.com' OR userName = 'teste'
 );
+
+-- Fix for existing databases
+ALTER TABLE users MODIFY password VARCHAR(255);
+ALTER TABLE doctors MODIFY password VARCHAR(255);

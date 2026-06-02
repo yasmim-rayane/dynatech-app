@@ -1,23 +1,23 @@
-<<<<<<< Updated upstream
-import { Home, LineChart, Bell, User } from "lucide-react";
-=======
-import { Home, LineChart, User, Users } from "lucide-react";
+import { Home, LineChart, Bell, User, Users } from "lucide-react";
 import type { UserRole } from "../../contexts/AuthContext";
->>>>>>> Stashed changes
 
-export type Tab = "home" | "history" | "reminders" | "profile";
+export type Tab = "home" | "history" | "reminders" | "patients" | "profile";
 
 export function BottomNav({
   active,
   onChange,
+  userRole,
 }: {
   active: Tab;
   onChange: (t: Tab) => void;
+  userRole?: UserRole | null;
 }) {
   const items: { key: Tab; label: string; Icon: typeof Home }[] = [
     { key: "home", label: "Início", Icon: Home },
     { key: "history", label: "Histórico", Icon: LineChart },
-    { key: "reminders", label: "Lembretes", Icon: Bell },
+    userRole === "professional"
+      ? { key: "patients", label: "Pacientes", Icon: Users }
+      : { key: "reminders", label: "Lembretes", Icon: Bell },
     { key: "profile", label: "Perfil", Icon: User },
   ];
   return (

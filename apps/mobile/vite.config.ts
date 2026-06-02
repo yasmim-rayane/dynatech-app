@@ -22,6 +22,7 @@ export default defineConfig({
   assetsInclude: ['**/*.svg', '**/*.csv'],
 
   server: {
+    host: true, // Expõe o servidor Vite para a rede local (acessível via IP)
     proxy: {
       '/api': {
         target: 'https://powdering-discharge-washhouse.ngrok-free.dev',

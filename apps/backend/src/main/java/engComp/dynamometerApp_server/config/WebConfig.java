@@ -17,13 +17,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(
-                        "http://localhost:5173",       // Vite dev server
-                        "http://localhost:4173",       // Vite preview
-                        "https://localhost",           // Capacitor Android (https scheme)
-                        "capacitor://localhost",       // Capacitor iOS
-                        "http://localhost"             // Fallback
-                )
+                .allowedOriginPatterns("*") // Permite acessos via IP da rede local e outros
+
                 .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(false)

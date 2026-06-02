@@ -51,9 +51,11 @@ function playPairingFeedback(soundOn: boolean, vibrationOn: boolean) {
 export function PairingScreen({
   onConnect,
   onBack,
+  onSkip,
 }: {
   onConnect: () => void;
   onBack?: () => void;
+  onSkip?: () => void;
 }) {
   const { sound, vibration } = usePreferences();
   const [devices, setDevices] = useState<{ device: BleDevice; rssi: number }[]>([]);
@@ -126,14 +128,32 @@ export function PairingScreen({
       className="h-full w-full flex flex-col px-6 pt-6 animate-fadeSlideUp"
       style={{ background: "var(--brand-card)" }}
     >
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="w-10 h-10 rounded-full flex items-center justify-center mb-3 active:scale-90 transition-transform"
-          style={{ background: "var(--brand-chip-bg)" }}
-        >
-          <ChevronLeft size={20} style={{ color: "var(--brand-text)" }} />
-        </button>
+      {(onBack || onSkip) && (
+        <div className="flex justify-between items-start mb-3">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+              style={{ background: "var(--brand-chip-bg)" }}
+            >
+              <ChevronLeft size={20} style={{ color: "var(--brand-text)" }} />
+            </button>
+          ) : <div />}
+          
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              className="px-4 py-2 rounded-full font-medium active:scale-95 transition-transform"
+              style={{ 
+                background: "var(--brand-chip-bg)", 
+                color: "var(--brand-text-muted)", 
+                fontSize: 13 
+              }}
+            >
+              Pular por enquanto
+            </button>
+          )}
+        </div>
       )}
       <h1 style={{ color: "var(--brand-text)", fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>
         Conectar dispositivo

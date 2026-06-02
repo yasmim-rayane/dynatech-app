@@ -1,10 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import * as api from "../services/api";
-<<<<<<< Updated upstream
-import type { UserResponse } from "../services/api";
-=======
+import { Preferences } from "@capacitor/preferences";
 import type { UserResponse, DoctorResponse } from "../services/api";
->>>>>>> Stashed changes
 
 /* ── Tipos ─────────────────────────────────────────────── */
 
@@ -17,12 +14,6 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-<<<<<<< Updated upstream
-  signup: (data: api.UserCreatePayload) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
-  updateUser: (data: api.UserUpdatePayload) => Promise<void>;
-=======
   signupDoctor: (data: api.DoctorCreatePayload) => Promise<void>;
   signupPatient: (data: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -30,7 +21,9 @@ interface AuthState {
   updateUser: (data: api.UserUpdatePayload) => Promise<void>;
   updateDoctor: (data: api.DoctorUpdatePayload) => Promise<void>;
   setUserRole: (role: UserRole) => void;
->>>>>>> Stashed changes
+  userRole: UserRole | null;
+  isProfessional: boolean;
+  isPatient: boolean;
   clearError: () => void;
 }
 
@@ -45,10 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [userRoleState, setUserRoleState] = useState<UserRole | null>(null);
+  const isProfessional = userRoleState === "professional";
+  const isPatient = userRoleState === "patient";
+
   const clearError = useCallback(() => setError(null), []);
 
-<<<<<<< Updated upstream
-=======
   const setUserRole = useCallback((role: UserRole) => {
     setUserRoleState(role);
   }, []);
@@ -90,25 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Login dual: tenta primeiro como Doctor, se 404 tenta como User.
    * Isso determina automaticamente o role do usuário.
    */
->>>>>>> Stashed changes
   const login = useCallback(async (loginEmail: string, password: string) => {
     setIsLoading(true);
     setError(null);
     try {
-<<<<<<< Updated upstream
-      await api.login(loginEmail, password);
-      // Login bem-sucedido — buscar dados completos do usuário
-      const userData = await api.getUser(loginEmail);
-      setUser(userData);
-      setEmail(loginEmail);
-    } catch (e: any) {
-      if (e?.status === 404) {
-        setError("Usuário não encontrado.");
-      } else if (e?.status === 401) {
-        setError("Senha incorreta.");
-      } else {
-        setError("Erro de conexão. Verifique sua internet.");
-=======
       const trimmedEmail = loginEmail.trim();
 
       // 1. Tentar login como Doctor
@@ -153,21 +133,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setError("Erro de conexão. Verifique sua internet.");
         }
         throw userError;
->>>>>>> Stashed changes
       }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-<<<<<<< Updated upstream
-  const signup = useCallback(async (data: api.UserCreatePayload) => {
-=======
   /**
    * Cadastro de profissional de saúde — usa /api/doctor/create
    */
   const signupDoctor = useCallback(async (data: api.DoctorCreatePayload) => {
->>>>>>> Stashed changes
     setIsLoading(true);
     setError(null);
     try {
@@ -175,11 +150,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setDoctorData(doctorResp);
       setUser(null);
       setEmail(data.email);
-<<<<<<< Updated upstream
-=======
       setUserRoleState("professional");
       await persistSession(null, data.email, "professional", doctorResp);
->>>>>>> Stashed changes
     } catch (e: any) {
       if (e?.status === 400) {
         setError(e?.backendMessage || "E-mail ou usuário já cadastrado.");
@@ -192,9 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-<<<<<<< Updated upstream
-  const logout = useCallback(() => {
-=======
   /**
    * Cadastro de paciente — o paciente já foi criado pelo profissional (sem senha).
    * Este fluxo define username e senha via reset de senha.
@@ -216,12 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Passo 1: Enviar código de reset para o email do paciente
       await api.sendResetCode(data.email);
 
-      // NOTA: O código foi enviado por email. O paciente precisa inseri-lo.
-      // Como o fluxo de PatientSignupScreen não tem campo de código,
-      // salvamos os dados parciais e redirecionamos para uma tela de verificação.
-      // Porém, para manter o fluxo existente da UI, vamos salvar o estado
-      // e marcar que a conta está pendente de ativação.
-
       // Tentamos fazer login para verificar se já tem senha definida
       try {
         await api.loginUser(data.email, data.password);
@@ -237,27 +200,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Senha não bate ou user não tem senha — continuar com fluxo de reset
       }
 
-      // Armazena dados pendentes — o paciente precisa inserir o código enviado por email
-      // Para agora, vamos fazer o login após o set de senha ser concluído
       // Salvar os dados do paciente no session para usar depois
       const userData = await api.getUser(data.email);
 
       // Atualizar username se necessário
+      let finalUser = userData;
       if (data.username) {
         try {
-          const updatedUser = await api.updateUser(data.email, { username: data.username });
-          setUser(updatedUser);
+          finalUser = await api.updateUser(data.email, { username: data.username });
         } catch {
-          setUser(userData);
+          // Ignorar erro
         }
-      } else {
-        setUser(userData);
       }
 
+      setUser(finalUser);
       setDoctorData(null);
       setEmail(data.email);
       setUserRoleState("patient");
-      await persistSession(user, data.email, "patient", null);
+      await persistSession(finalUser, data.email, "patient", null);
 
     } catch (e: any) {
       if (e?.status === 404) {
@@ -269,30 +229,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   const logout = useCallback(async () => {
->>>>>>> Stashed changes
     setUser(null);
     setDoctorData(null);
     setEmail("");
+    setUserRoleState(null);
     setError(null);
+    await Preferences.remove({ key: "userSession" });
   }, []);
 
   const refreshUser = useCallback(async () => {
     if (!email) return;
     try {
-      if (userRole === "patient") {
+      if (userRoleState === "patient") {
         const userData = await api.getUser(email);
         setUser(userData);
-      } else if (userRole === "professional") {
+      } else if (userRoleState === "professional") {
         const doctorDataResp = await api.getDoctor(email);
         setDoctorData(doctorDataResp);
       }
     } catch {
       // Silently fail — offline ou usuário excluído
     }
-  }, [email, userRole]);
+  }, [email, userRoleState]);
 
   /**
    * Atualiza dados do User (paciente)
@@ -307,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Se o email mudou, atualizar a referência
       if (data.email) {
         setEmail(data.email);
-        await persistSession(updated, data.email, userRole || "patient", doctorData);
+        await persistSession(updated, data.email, userRoleState || "patient", doctorData);
       }
     } catch (e: any) {
       setError(e?.backendMessage || "Erro ao atualizar dados.");
@@ -315,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [email, userRole, doctorData]);
+  }, [email, userRoleState, doctorData]);
 
   /**
    * Atualiza dados do Doctor (profissional)
@@ -349,12 +310,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         error,
         login,
-<<<<<<< Updated upstream
-        signup,
-        logout,
-        refreshUser,
-        updateUser,
-=======
         signupDoctor,
         signupPatient,
         logout,
@@ -362,7 +317,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUser,
         updateDoctor,
         setUserRole,
->>>>>>> Stashed changes
+        userRole: userRoleState,
+        isProfessional,
+        isPatient,
         clearError,
       }}
     >

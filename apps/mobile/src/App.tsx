@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PatientsProvider } from "./contexts/PatientsContext";
 
 import { BottomNav, Tab } from "./components/common/BottomNav";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -12,8 +14,7 @@ import { TutorialScreen } from "./screens/TutorialScreen";
 import { ProfessionalHomeScreen } from "./screens/ProfessionalHomeScreen";
 import { ProfessionalHistoryScreen } from "./screens/ProfessionalHistoryScreen";
 
-import { PatientProfileScreen } from "./screens/PatientProfileScreen";
-import { ProfessionalProfileScreen } from "./screens/ProfessionalProfileScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
 import { NotificationsScreen } from "./screens/NotificationsScreen";
 import { AccountSettingsScreen } from "./screens/AccountSettingsScreen";
 import { GeneralSettingsScreen } from "./screens/GeneralSettingsScreen";
@@ -164,7 +165,7 @@ function Shell() {
   } else if (stage === "tutorial") {
     content = <TutorialScreen onComplete={() => setStage("pairing")} />;
   } else if (stage === "pairing") {
-    content = <PairingScreen onConnect={() => setStage("app")} />;
+    content = <PairingScreen onConnect={() => setStage("app")} onSkip={() => setStage("app")} />;
   } else if (sub === "notifications") {
     content = <NotificationsScreen onBack={() => setSub(null)} />;
   } else if (sub === "account") {
@@ -204,7 +205,7 @@ function Shell() {
         inner = <PatientHistoryScreen />;
       } else {
         inner = (
-          <PatientProfileScreen
+          <ProfileScreen
             onLogout={() => {
               setTab("home");
               setStage("login");
@@ -233,7 +234,7 @@ function Shell() {
 
       } else {
         inner = (
-          <ProfessionalProfileScreen
+          <ProfileScreen
             onLogout={() => {
               setTab("home");
               setStage("login");
@@ -314,9 +315,7 @@ function Shell() {
   );
 }
 
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { PatientsProvider } from "./contexts/PatientsContext";
-import React from "react";
+
 
 export default function App() {
   return (

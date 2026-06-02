@@ -208,18 +208,6 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
             if (!formValid || auth.isLoading) return;
             setSaveError("");
             try {
-<<<<<<< Updated upstream
-              const payload: Record<string, any> = {};
-              if (name !== auth.user?.name) payload.name = name.trim();
-              if (email !== auth.user?.email) payload.email = email.trim();
-              if (peso !== (auth.user?.peso != null ? auth.user.peso.toFixed(2) : "")) payload.peso = Number(peso);
-              if (altura !== (auth.user?.altura != null ? String(auth.user.altura) : "")) payload.altura = Number(altura);
-              const backMao = maoToBack(maoDominante);
-              if (backMao !== auth.user?.maoDominante) payload.maoDominante = backMao;
-              // Atualiza no servidor se houver mudanças
-              if (Object.keys(payload).length > 0) {
-                await auth.updateUser(payload);
-=======
               if (auth.isProfessional) {
                 // Profissional: usa updateDoctor
                 const payload: Record<string, any> = {};
@@ -233,10 +221,14 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
                 const payload: Record<string, any> = {};
                 if (name !== auth.user?.name) payload.name = name.trim();
                 if (email !== auth.user?.email) payload.email = email.trim();
+                if (peso !== (auth.user?.peso != null ? auth.user.peso.toFixed(2) : "")) payload.peso = Number(peso);
+                if (altura !== (auth.user?.altura != null ? String(auth.user.altura) : "")) payload.altura = Number(altura);
+                const backMao = maoToBack(maoDominante);
+                if (backMao !== auth.user?.maoDominante) payload.maoDominante = backMao;
+                // Atualiza no servidor se houver mudanças
                 if (Object.keys(payload).length > 0) {
                   await auth.updateUser(payload);
                 }
->>>>>>> Stashed changes
               }
               onBack();
             } catch (e: any) {
