@@ -20,7 +20,7 @@ public class DynamometerAppServerApplication {
     public CommandLineRunner runAlterTable(JdbcTemplate jdbcTemplate) {
         return args -> {
             try {
-                jdbcTemplate.execute("ALTER TABLE users MODIFY password VARCHAR(12) NULL");
+                jdbcTemplate.execute("ALTER TABLE users MODIFY password VARCHAR(255) NULL");
             } catch (Exception e) {
                 System.out.println("Aviso ao alterar tabela users: " + e.getMessage());
             }

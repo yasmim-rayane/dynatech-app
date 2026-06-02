@@ -1,27 +1,26 @@
-# Dependencies
-node_modules
+# ══════════════════════════════════════════════
+#  DynaTech — .gitignore (monorepo)
+# ══════════════════════════════════════════════
+
+# ─── Dependências ────────────────────────────
+node_modules/
 .pnp
 .pnp.js
 
-# Testing
-coverage
+# ─── Build / Produção ───────────────────────
+dist/
+build/
 
-# Production
-dist
-build
+# ─── Testes ──────────────────────────────────
+coverage/
 
-# Misc
-.DS_Store
-*.pem
+# ─── Variáveis de ambiente ───────────────────
+.env
+.env*.local
 
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDEs and editors
-.idea
-.vscode
+# ─── IDEs e editores ────────────────────────
+.idea/
+.vscode/
 *.swp
 *.swo
 *.ntvs*
@@ -29,15 +28,30 @@ yarn-error.log*
 *.sln
 *.suo
 
-# Local env files
-.env*.local
-.env
+# ─── OS ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.pem
 
-# Capacitor
-/android/app/build
-/android/app/release
-/android/app/debug
-/android/app/generated
+# ─── Logs ────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Quarentena (arquivos não utilizados)
-_quarentena
+# ─── Java / Spring Boot (Backend) ───────────
+apps/backend/target/
+apps/backend/.idea/
+
+# ─── Android (Capacitor) ────────────────────
+apps/mobile/android/.gradle/
+apps/mobile/android/.idea/
+apps/mobile/android/.kotlin/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/android/app/release/
+apps/mobile/android/app/debug/
+apps/mobile/android/local.properties
+apps/mobile/android/capacitor-cordova-android-plugins/
+
+# ─── Quarentena (arquivos isolados da auditoria) ──
+_quarantine/
