@@ -1,5 +1,5 @@
 import { Home, LineChart, User, Users } from "lucide-react";
-import type { UserRole } from "../../services/mockData";
+import type { UserRole } from "../../contexts/AuthContext";
 
 export type Tab = "home" | "history" | "profile" | "patients";
 

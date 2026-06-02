@@ -115,32 +115,89 @@ public class ResultService {
 
         return resultado;
     }
-    //POST
-    public ResultResponseDTO createResult(ResultCreateDTO dto) {
-        // busca o usuário pelo email
-        Optional<User> userOptional = userRepository.findByEmail(dto.getEmail());
 
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado com email: " + dto.getEmail());
+    public ResultResponseDTO consolidateDailyResults(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + email));
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        List<Result> todayResults = resultRepository
+                .findByUserIdAndExamDateBetweenOrderByExamDateAsc(user.getId(), startOfDay, endOfDay);
+
+        if (todayResults.isEmpty()) {
+            throw new RuntimeException("Nenhum resultado encontrado para hoje");
         }
 
-        Result result = new Result();
+        // calcula média de cada campo desconsiderando null e 0
+        Result consolidated = new Result();
+        consolidated.setUser(user);
+        consolidated.setExamDate(LocalDateTime.now());
 
-        result.setUser(userOptional.get());
+        consolidated.setPalmMaxD(calcAverage(todayResults, Result::getPalmMaxD));
+        consolidated.setPalmMaxE(calcAverage(todayResults, Result::getPalmMaxE));
+        consolidated.setPinchMaxD1(calcAverage(todayResults, Result::getPinchMaxD1));
+        consolidated.setPinchMaxD2(calcAverage(todayResults, Result::getPinchMaxD2));
+        consolidated.setPinchMaxD3(calcAverage(todayResults, Result::getPinchMaxD3));
+        consolidated.setPinchMaxD4(calcAverage(todayResults, Result::getPinchMaxD4));
+        consolidated.setPinchMaxE1(calcAverage(todayResults, Result::getPinchMaxE1));
+        consolidated.setPinchMaxE2(calcAverage(todayResults, Result::getPinchMaxE2));
+        consolidated.setPinchMaxE3(calcAverage(todayResults, Result::getPinchMaxE3));
+        consolidated.setPinchMaxE4(calcAverage(todayResults, Result::getPinchMaxE4));
 
-        result.setPinchMaxD1(dto.getPinchMaxD1());
-        result.setPinchMaxD2(dto.getPinchMaxD2());
-        result.setPinchMaxD3(dto.getPinchMaxD3());
-        result.setPinchMaxD4(dto.getPinchMaxD4());
-        result.setPinchMaxE1(dto.getPinchMaxE1());
-        result.setPinchMaxE2(dto.getPinchMaxE2());
-        result.setPinchMaxE3(dto.getPinchMaxE3());
-        result.setPinchMaxE4(dto.getPinchMaxE4());
+        // deleta todos os registros do dia
+        resultRepository.deleteAll(todayResults);
 
-        result.setPalmMaxD(dto.getPalmMaxD());
-        result.setPalmMaxE(dto.getPalmMaxE());
+        // salva o registro consolidado
+        return new ResultResponseDTO(resultRepository.save(consolidated));
+    }
 
-        result.setExamDate(LocalDateTime.now());
+    private Double calcAverage(List<Result> results, java.util.function.Function<Result, Double> getter) {
+        List<Double> values = results.stream()
+                .map(getter)
+                .filter(v -> v != null && v > 0)
+                .toList();
+
+        if (values.isEmpty()) return null;
+
+        return values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+    }
+
+    //POST
+    public ResultResponseDTO createResult(ResultCreateDTO dto) {
+        User user = userRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + dto.getEmail()));
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        List<Result> todayResults = resultRepository.findByUserIdAndExamDateBetweenOrderByExamDateAsc(
+                user.getId(), startOfDay, endOfDay);
+
+        List<Result> availableResults = todayResults.stream()
+                .filter(r -> isAvailable(r, dto))
+                .toList();
+
+        Result result;
+        if (availableResults.isEmpty()) {
+            result = new Result();
+            result.setUser(user);
+            result.setExamDate(LocalDateTime.now());
+        } else {
+            result = availableResults.get(0);
+        }
+
+        if (dto.getPalmMaxD() != null && dto.getPalmMaxD() > 0) result.setPalmMaxD(dto.getPalmMaxD());
+        if (dto.getPalmMaxE() != null && dto.getPalmMaxE() > 0) result.setPalmMaxE(dto.getPalmMaxE());
+        if (dto.getPinchMaxD1() != null && dto.getPinchMaxD1() > 0) result.setPinchMaxD1(dto.getPinchMaxD1());
+        if (dto.getPinchMaxD2() != null && dto.getPinchMaxD2() > 0) result.setPinchMaxD2(dto.getPinchMaxD2());
+        if (dto.getPinchMaxD3() != null && dto.getPinchMaxD3() > 0) result.setPinchMaxD3(dto.getPinchMaxD3());
+        if (dto.getPinchMaxD4() != null && dto.getPinchMaxD4() > 0) result.setPinchMaxD4(dto.getPinchMaxD4());
+        if (dto.getPinchMaxE1() != null && dto.getPinchMaxE1() > 0) result.setPinchMaxE1(dto.getPinchMaxE1());
+        if (dto.getPinchMaxE2() != null && dto.getPinchMaxE2() > 0) result.setPinchMaxE2(dto.getPinchMaxE2());
+        if (dto.getPinchMaxE3() != null && dto.getPinchMaxE3() > 0) result.setPinchMaxE3(dto.getPinchMaxE3());
+        if (dto.getPinchMaxE4() != null && dto.getPinchMaxE4() > 0) result.setPinchMaxE4(dto.getPinchMaxE4());
 
         return new ResultResponseDTO(resultRepository.save(result));
     }
@@ -151,5 +208,29 @@ public class ResultService {
             throw new RuntimeException("Resultado não encontrado com id: " + id);
         }
         resultRepository.deleteById(id);
+    }
+
+    private boolean isAvailable(Result r, ResultCreateDTO dto) {
+        if (dto.getPalmMaxD() != null && dto.getPalmMaxD() > 0
+                && (r.getPalmMaxD() != null && r.getPalmMaxD() > 0)) return false;
+        if (dto.getPalmMaxE() != null && dto.getPalmMaxE() > 0
+                && (r.getPalmMaxE() != null && r.getPalmMaxE() > 0)) return false;
+        if (dto.getPinchMaxD1() != null && dto.getPinchMaxD1() > 0
+                && (r.getPinchMaxD1() != null && r.getPinchMaxD1() > 0)) return false;
+        if (dto.getPinchMaxD2() != null && dto.getPinchMaxD2() > 0
+                && (r.getPinchMaxD2() != null && r.getPinchMaxD2() > 0)) return false;
+        if (dto.getPinchMaxD3() != null && dto.getPinchMaxD3() > 0
+                && (r.getPinchMaxD3() != null && r.getPinchMaxD3() > 0)) return false;
+        if (dto.getPinchMaxD4() != null && dto.getPinchMaxD4() > 0
+                && (r.getPinchMaxD4() != null && r.getPinchMaxD4() > 0)) return false;
+        if (dto.getPinchMaxE1() != null && dto.getPinchMaxE1() > 0
+                && (r.getPinchMaxE1() != null && r.getPinchMaxE1() > 0)) return false;
+        if (dto.getPinchMaxE2() != null && dto.getPinchMaxE2() > 0
+                && (r.getPinchMaxE2() != null && r.getPinchMaxE2() > 0)) return false;
+        if (dto.getPinchMaxE3() != null && dto.getPinchMaxE3() > 0
+                && (r.getPinchMaxE3() != null && r.getPinchMaxE3() > 0)) return false;
+        if (dto.getPinchMaxE4() != null && dto.getPinchMaxE4() > 0
+                && (r.getPinchMaxE4() != null && r.getPinchMaxE4() > 0)) return false;
+        return true;
     }
 }

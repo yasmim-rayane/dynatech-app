@@ -11,30 +11,37 @@ import {
   UserCircle,
   AlertTriangle,
   Activity,
+  FileText,
+  Power,
 } from "lucide-react";
+import * as api from "../services/api";
 import { usePatients } from "../contexts/PatientsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { generoToFront, maoToFront } from "../services/api";
-import type { Patient } from "../services/mockData";
+import type { Patient } from "../contexts/PatientsContext";
 import { PatientFormModal } from "./PatientFormModal";
 
 export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: () => void }) {
   const { theme } = useTheme();
-  const { patients, removePatient, setActivePatientId } = usePatients();
+  const { patients, removePatient, setActivePatientId, togglePatientStatus } = usePatients();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [deletingPatient, setDeletingPatient] = useState<Patient | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"ativos" | "inativos">("ativos");
+  const [reportLoading, setReportLoading] = useState<string | null>(null);
+  const [reportSuccess, setReportSuccess] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return patients;
+    const filteredByStatus = patients.filter(p => statusFilter === "ativos" ? !p.inativo : p.inativo);
+    if (!search.trim()) return filteredByStatus;
     const q = search.toLowerCase();
-    return patients.filter(
+    return filteredByStatus.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         (p.email && p.email.toLowerCase().includes(q)),
     );
-  }, [patients, search]);
+  }, [patients, search, statusFilter]);
 
   function handleEdit(patient: Patient) {
     setEditingPatient(patient);
@@ -46,9 +53,13 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
     setShowForm(true);
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (deletingPatient) {
-      removePatient(deletingPatient.id);
+      try {
+        await removePatient(deletingPatient.id);
+      } catch (e) {
+        console.error("Erro ao remover paciente:", e);
+      }
       setDeletingPatient(null);
     }
   }
@@ -56,6 +67,21 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
   function formatDate(iso: string): string {
     const [y, m, d] = iso.split("-");
     return `${d}/${m}/${y}`;
+  }
+
+  async function handleGenerateReport(email: string | undefined) {
+    if (!email) return;
+    setReportLoading(email);
+    setReportSuccess(null);
+    try {
+      await api.consolidateResults(email);
+      setReportSuccess(email);
+      setTimeout(() => setReportSuccess(null), 3000);
+    } catch (e) {
+      console.error("Erro ao gerar relatório:", e);
+    } finally {
+      setReportLoading(null);
+    }
   }
 
   return (
@@ -102,6 +128,36 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
             }}
           />
         </div>
+
+        {/* Tabs: Ativos / Inativos */}
+        <div className="flex p-1 rounded-xl mb-4 mt-2" style={{ background: "var(--brand-chip-bg)" }}>
+          <button
+            onClick={() => setStatusFilter("ativos")}
+            className="flex-1 py-2 rounded-lg transition-all duration-200"
+            style={{
+              background: statusFilter === "ativos" ? "var(--brand-card)" : "transparent",
+              color: statusFilter === "ativos" ? "var(--brand-text)" : "var(--brand-text-muted)",
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: statusFilter === "ativos" ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
+            }}
+          >
+            Ativos
+          </button>
+          <button
+            onClick={() => setStatusFilter("inativos")}
+            className="flex-1 py-2 rounded-lg transition-all duration-200"
+            style={{
+              background: statusFilter === "inativos" ? "var(--brand-card)" : "transparent",
+              color: statusFilter === "inativos" ? "var(--brand-text)" : "var(--brand-text-muted)",
+              fontSize: 13,
+              fontWeight: 600,
+              boxShadow: statusFilter === "inativos" ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
+            }}
+          >
+            Inativos
+          </button>
+        </div>
       </div>
 
       {/* Patient List */}
@@ -147,19 +203,15 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
                 animationDelay: `${0.05 * i}s`,
               }}
             >
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: "var(--brand-emerald-soft)",
-                    border: "1.5px solid var(--brand-emerald)",
-                  }}
-                >
-                  <span
+              <div className="p-4 flex flex-col">
+                <div className="flex items-start gap-4">
+                  {/* Avatar */}
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{
+                      background: "var(--brand-emerald-soft)",
                       color: "var(--brand-emerald)",
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: 700,
                     }}
                   >
@@ -169,24 +221,38 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
                       .join("")
                       .slice(0, 2)
                       .toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div
-                    style={{
-                      color: "var(--brand-text)",
-                      fontSize: 15,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {patient.name}
                   </div>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    {patient.email && (
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      style={{
+                        color: "var(--brand-text)",
+                        fontSize: 15,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {patient.name}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                      {patient.email && (
+                        <div className="flex items-center gap-1">
+                          <Mail
+                            size={11}
+                            style={{ color: "var(--brand-text-faint)" }}
+                          />
+                          <span
+                            style={{
+                              color: "var(--brand-text-muted)",
+                              fontSize: 12,
+                            }}
+                          >
+                            {patient.email}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
-                        <Mail
+                        <Calendar
                           size={11}
                           style={{ color: "var(--brand-text-faint)" }}
                         />
@@ -196,94 +262,121 @@ export function PatientsScreen({ onStartMeasurement }: { onStartMeasurement?: ()
                             fontSize: 12,
                           }}
                         >
-                          {patient.email}
+                          {formatDate(patient.dataNascimento)}
                         </span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <Calendar
-                        size={11}
-                        style={{ color: "var(--brand-text-faint)" }}
-                      />
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span
+                        className="rounded-full px-2 py-0.5"
                         style={{
+                          background: "var(--brand-chip-bg)",
                           color: "var(--brand-text-muted)",
-                          fontSize: 12,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        {formatDate(patient.dataNascimento)}
+                        {generoToFront(patient.genero)}
                       </span>
+                      <span
+                        className="rounded-full px-2 py-0.5"
+                        style={{
+                          background: "var(--brand-chip-bg)",
+                          color: "var(--brand-text-muted)",
+                          fontSize: 11,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Mão {maoToFront(patient.maoDominante)}
+                      </span>
+                      <span
+                        className="rounded-full px-2 py-0.5"
+                        style={{
+                          background: "var(--brand-chip-bg)",
+                          color: "var(--brand-text-muted)",
+                          fontSize: 11,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {patient.peso.toFixed(1)} kg
+                      </span>
+                      {reportSuccess === patient.email && (
+                        <span className="text-xs font-bold ml-1 animate-fadeIn" style={{ color: "var(--brand-emerald)" }}>
+                          Relatório gerado!
+                        </span>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span
-                      className="rounded-full px-2 py-0.5"
-                      style={{
-                        background: "var(--brand-chip-bg)",
-                        color: "var(--brand-text-muted)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {generoToFront(patient.genero)}
-                    </span>
-                    <span
-                      className="rounded-full px-2 py-0.5"
-                      style={{
-                        background: "var(--brand-chip-bg)",
-                        color: "var(--brand-text-muted)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                      }}
-                    >
-                      Mão {maoToFront(patient.maoDominante)}
-                    </span>
-                    <span
-                      className="rounded-full px-2 py-0.5"
-                      style={{
-                        background: "var(--brand-chip-bg)",
-                        color: "var(--brand-text-muted)",
-                        fontSize: 11,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {patient.peso.toFixed(1)} kg
-                    </span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-1.5 flex-shrink-0">
+                <div 
+                  className="mt-4 pt-3 flex items-center justify-end gap-2 border-t" 
+                  style={{ borderColor: "var(--brand-border-soft)" }}
+                >
                   <button
                     onClick={() => {
+                      if (patient.inativo) return;
                       setActivePatientId(patient.id);
                       if (onStartMeasurement) onStartMeasurement();
                     }}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center active:scale-90 transition-transform"
-                    style={{ background: "var(--brand-emerald-soft)" }}
+                    disabled={patient.inativo}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform ${patient.inativo ? '' : 'active:scale-90'}`}
+                    style={{ 
+                      background: patient.inativo ? "var(--brand-chip-bg)" : "var(--brand-emerald-soft)",
+                      cursor: patient.inativo ? "not-allowed" : "pointer"
+                    }}
                   >
                     <Activity
-                      size={15}
-                      style={{ color: "var(--brand-emerald)" }}
+                      size={18}
+                      style={{ color: patient.inativo ? "var(--brand-text-muted)" : "var(--brand-emerald)" }}
                     />
                   </button>
                   <button
                     onClick={() => handleEdit(patient)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center active:scale-90 transition-transform"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                     style={{ background: "var(--brand-blue-soft)" }}
                   >
                     <Edit3
-                      size={15}
+                      size={18}
                       style={{ color: "var(--brand-blue)" }}
                     />
                   </button>
                   <button
+                    onClick={() => handleGenerateReport(patient.email)}
+                    disabled={reportLoading === patient.email}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                    style={{ background: reportLoading === patient.email ? "var(--brand-chip-bg)" : "var(--brand-blue-soft)" }}
+                  >
+                    <FileText
+                      size={18}
+                      style={{ color: reportLoading === patient.email ? "var(--brand-text-muted)" : "var(--brand-blue)" }}
+                    />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (patient.email) {
+                        togglePatientStatus(patient.email);
+                      }
+                    }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+                    style={{ background: patient.inativo ? "var(--brand-chip-bg)" : "var(--brand-emerald-soft)" }}
+                  >
+                    <Power
+                      size={18}
+                      style={{ color: patient.inativo ? "var(--brand-text-muted)" : "var(--brand-emerald)" }}
+                    />
+                  </button>
+                  <button
                     onClick={() => setDeletingPatient(patient)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center active:scale-90 transition-transform"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                     style={{ background: "var(--brand-danger-soft)" }}
                   >
                     <Trash2
-                      size={15}
+                      size={18}
                       style={{ color: "var(--brand-danger)" }}
                     />
                   </button>

@@ -158,10 +158,6 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  function stopRun() {
-    // Medição agora é controlada exatamente por 5s no ESP32.
-    // Botão de parar desabilitado para garantir o protocolo clínico de 5s.
-  }
 
   function reset() {
     setStep("type");
@@ -247,7 +243,6 @@ export function MeasurementScreen({ onBack }: { onBack: () => void }) {
             max={max}
             running={running}
             secondsLeft={secondsLeft}
-            onStop={stopRun}
             onStart={startRun}
           />
         )}
@@ -469,7 +464,6 @@ function LiveStep({
   max,
   running,
   secondsLeft,
-  onStop,
   onStart,
 }: {
   type: Type;
@@ -480,7 +474,6 @@ function LiveStep({
   max: number;
   running: boolean;
   secondsLeft: number;
-  onStop: () => void;
   onStart: () => void;
 }) {
   const fingerLabel = finger ? FINGER_OPTS.find(f => f.key === finger)?.label : "";

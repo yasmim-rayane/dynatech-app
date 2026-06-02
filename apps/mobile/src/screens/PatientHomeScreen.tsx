@@ -1,27 +1,78 @@
 import { useState, useEffect } from "react";
-import { Hand, Zap, Bell, TrendingUp, ShieldCheck, Activity } from "lucide-react";
+import { Hand, Zap, Bell, TrendingUp, ShieldCheck, Activity, Info, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppNotifications } from "../contexts/NotificationsContext";
-import { MOCK_PATIENT_RESULTS } from "../services/mockData";
+import * as api from "../services/api";
 import type { ResultResponse } from "../services/api";
+
+const GRIP_NORMS: [number, number, number, number, number][] = [
+  // idade  H_dir  H_esq  M_dir  M_esq
+  [  20,    47.0,  43.2,  28.2,  25.6 ],
+  [  25,    47.1,  44.0,  28.9,  26.4 ],
+  [  30,    47.1,  44.6,  28.7,  26.0 ],
+  [  35,    47.1,  44.6,  28.3,  25.7 ],
+  [  40,    45.3,  43.5,  27.2,  25.3 ],
+  [  45,    43.3,  41.0,  26.2,  24.1 ],
+  [  50,    42.5,  40.0,  25.1,  22.5 ],
+  [  55,    40.0,  37.0,  23.5,  20.8 ],
+  [  60,    36.8,  34.7,  22.5,  20.0 ],
+  [  65,    34.7,  32.6,  20.3,  18.0 ],
+  [  70,    31.5,  28.4,  18.4,  16.2 ],
+  [  75,    25.6,  22.4,  15.4,  13.3 ],
+];
+
+function calculateAge(dobIso: string | undefined) {
+  if (!dobIso) return null;
+  const birthDate = new Date(dobIso);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function getNorms(age: number | null, gender: string | undefined) {
+  if (age == null || !gender || (gender !== 'm' && gender !== 'f')) return null;
+  let matchRow = GRIP_NORMS[0];
+  for (const row of GRIP_NORMS) {
+    if (age >= row[0]) {
+      matchRow = row;
+    } else {
+      break;
+    }
+  }
+  return {
+    dir: gender === 'm' ? matchRow[1] : matchRow[3],
+    esq: gender === 'm' ? matchRow[2] : matchRow[4],
+  };
+}
 
 export function PatientHomeScreen({
   onOpenNotifications,
 }: {
   onOpenNotifications: () => void;
 }) {
-  const { user } = useAuth();
+  const { user, email } = useAuth();
   const { unreadCount } = useAppNotifications();
   const [lastResult, setLastResult] = useState<ResultResponse | null>(null);
   const [allResults, setAllResults] = useState<ResultResponse[]>([]);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
-    // Usa resultados mockados para o paciente
-    setAllResults(MOCK_PATIENT_RESULTS);
-    if (MOCK_PATIENT_RESULTS.length > 0) {
-      setLastResult(MOCK_PATIENT_RESULTS[0]);
-    }
-  }, []);
+    if (!email) return;
+    // Carrega resultados reais do backend
+    api.getAllResults(email).then((results) => {
+      setAllResults(results);
+      if (results.length > 0) {
+        setLastResult(results[0]);
+      }
+    }).catch((e) => {
+      console.error("Erro ao carregar resultados do paciente:", e);
+    });
+  }, [email]);
 
   const userName = user?.name ?? "Paciente";
   const firstName = userName.split(" ")[0];
@@ -54,6 +105,9 @@ export function PatientHomeScreen({
         return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
       })()
     : "--";
+
+  const age = calculateAge(user?.dataNascimento);
+  const norms = getNorms(age, user?.genero);
 
   return (
     <div
@@ -370,7 +424,120 @@ export function PatientHomeScreen({
             ))}
           </div>
         </div>
+
+        {/* Comparativo Normativo */}
+        {norms && (palmD != null || palmE != null) && (
+          <div
+            className="rounded-2xl p-4 shadow-md animate-fadeSlideUp relative"
+            style={{
+              background: "var(--brand-card)",
+              border: "1px solid var(--brand-border-soft)",
+              animationDelay: "0.4s",
+            }}
+          >
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full transition-transform active:scale-90"
+              style={{ background: "var(--brand-chip-bg)" }}
+            >
+              <Info size={16} style={{ color: "var(--brand-text-muted)" }} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4 pr-10">
+              <ShieldCheck
+                size={16}
+                style={{ color: "var(--brand-blue)" }}
+              />
+              <span
+                style={{
+                  color: "var(--brand-text)",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                Comparativo (Dados Saudáveis)
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {palmD != null && (
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span style={{ color: "var(--brand-text-muted)", fontWeight: 500 }}>Direita</span>
+                    <span style={{ color: "var(--brand-text-muted)" }}>Sua: {palmD.toFixed(1)} / Ref: {norms.dir.toFixed(1)} kgf</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "var(--brand-border-soft)" }}>
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${Math.min((palmD / norms.dir) * 100, 100)}%`,
+                        background: palmD >= norms.dir ? "var(--brand-emerald)" : (palmD >= norms.dir * 0.8 ? "var(--brand-accent)" : "var(--brand-danger)")
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              {palmE != null && (
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span style={{ color: "var(--brand-text-muted)", fontWeight: 500 }}>Esquerda</span>
+                    <span style={{ color: "var(--brand-text-muted)" }}>Sua: {palmE.toFixed(1)} / Ref: {norms.esq.toFixed(1)} kgf</span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "var(--brand-border-soft)" }}>
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${Math.min((palmE / norms.esq) * 100, 100)}%`,
+                        background: palmE >= norms.esq ? "var(--brand-emerald)" : (palmE >= norms.esq * 0.8 ? "var(--brand-accent)" : "var(--brand-danger)")
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Modal de Informação Normativa */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fadeIn" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+          <div 
+            className="w-full max-w-sm rounded-3xl p-6 animate-scaleIn relative"
+            style={{ background: "var(--brand-card)", boxShadow: "0 10px 40px rgba(0,0,0,0.2)" }}
+          >
+            <button
+              onClick={() => setShowInfoModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full transition-transform active:scale-90"
+              style={{ background: "var(--brand-chip-bg)" }}
+            >
+              <X size={18} style={{ color: "var(--brand-text)" }} />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--brand-blue-soft)" }}>
+                <Info size={20} style={{ color: "var(--brand-blue)" }} />
+              </div>
+              <h3 style={{ color: "var(--brand-text)", fontSize: 16, fontWeight: 700 }}>Sobre os Dados</h3>
+            </div>
+            <div className="space-y-3" style={{ color: "var(--brand-text-muted)", fontSize: 13, lineHeight: 1.5 }}>
+              <p>
+                Os valores de referência apresentados representam a força de preensão palmar (kgf) média de indivíduos saudáveis, medidos com o dinamômetro padrão.
+              </p>
+              <p>
+                Eles são calculados com base em sua <strong>idade ({age} anos)</strong> e <strong>gênero</strong>.
+              </p>
+              <div className="mt-4 p-3 rounded-xl" style={{ background: "var(--brand-chip-bg)", fontSize: 12 }}>
+                <strong style={{ color: "var(--brand-text)" }}>Fontes Principais:</strong>
+                <ul className="list-disc pl-4 mt-1 space-y-1">
+                  <li>Bohannon et al. (2006) — Meta-análise descritiva</li>
+                  <li>Caporrino et al. (1998) — População brasileira</li>
+                  <li>Hogrel (2015) — Dados normativos 5–80 anos</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

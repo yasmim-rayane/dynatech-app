@@ -14,8 +14,16 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
   const auth = useAuth();
   const [showPwd, setShowPwd] = useState(false);
 
-  const [name, setName] = useState(auth.user?.name ?? "");
-  const [email, setEmail] = useState(auth.user?.email ?? "");
+  // Para profissionais: usar doctorData; para pacientes: usar user
+  const initialName = auth.isProfessional
+    ? (auth.doctorData?.name ?? "")
+    : (auth.user?.name ?? "");
+  const initialEmail = auth.isProfessional
+    ? (auth.doctorData?.email ?? auth.email ?? "")
+    : (auth.user?.email ?? auth.email ?? "");
+
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
   const [peso, setPeso] = useState(auth.user?.peso != null ? auth.user.peso.toFixed(2) : "");
   const [altura, setAltura] = useState(auth.user?.altura != null ? String(auth.user.altura) : "");
   const [maoDominante, setMaoDominante] = useState(auth.user?.maoDominante ? maoToFront(auth.user.maoDominante) : "Direita");
@@ -59,7 +67,10 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
         </h2>
       </div>
 
-      <div className="px-6 pt-4 pb-10 space-y-5">
+      <div 
+        className="px-6 pt-4 space-y-5"
+        style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <div
           className="px-2"
           style={{ color: "var(--brand-text-faint)", fontSize: 11, fontWeight: 600, letterSpacing: "0.04em" }}
@@ -186,16 +197,26 @@ export function AccountSettingsScreen({ onBack }: { onBack: () => void }) {
             if (!formValid || auth.isLoading) return;
             setSaveError("");
             try {
-              const payload: Record<string, any> = {};
-              if (name !== auth.user?.name) payload.name = name.trim();
-              if (email !== auth.user?.email) payload.email = email.trim();
-              // Atualiza no servidor se houver mudanças
-              if (Object.keys(payload).length > 0) {
-                await auth.updateUser(payload);
+              if (auth.isProfessional) {
+                // Profissional: usa updateDoctor
+                const payload: Record<string, any> = {};
+                if (name !== initialName) payload.name = name.trim();
+                if (email !== initialEmail) payload.email = email.trim();
+                if (Object.keys(payload).length > 0) {
+                  await auth.updateDoctor(payload);
+                }
+              } else {
+                // Paciente: usa updateUser
+                const payload: Record<string, any> = {};
+                if (name !== auth.user?.name) payload.name = name.trim();
+                if (email !== auth.user?.email) payload.email = email.trim();
+                if (Object.keys(payload).length > 0) {
+                  await auth.updateUser(payload);
+                }
               }
               onBack();
             } catch (e: any) {
-              setSaveError("Erro ao salvar alterações.");
+              setSaveError(e?.backendMessage || "Erro ao salvar alterações.");
             }
           }}
           disabled={!formValid || auth.isLoading}

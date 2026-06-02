@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { Bluetooth, Bell, Users, ChevronRight, UserPlus, Activity } from "lucide-react";
-import { useTheme } from "../contexts/ThemeContext";
+
 import { useAuth } from "../contexts/AuthContext";
 import { useAppNotifications } from "../contexts/NotificationsContext";
 import { BleService } from "../services/ble/BleService";
@@ -16,8 +15,8 @@ export function HomeScreen({
   onOpenPairing: () => void;
   onGoToPatients: () => void;
 }) {
-  const { theme } = useTheme();
-  const { user } = useAuth();
+
+  const { user, doctorData } = useAuth();
   const { unreadCount, addNotification } = useAppNotifications();
   const [connected, setConnected] = useState(BleService.isConnected());
   const { patients } = usePatients();
@@ -59,7 +58,7 @@ export function HomeScreen({
     };
   }, [addNotification]);
 
-  const userName = user?.name ?? "Profissional";
+  const userName = doctorData?.name || user?.name || "Profissional";
   const firstName = userName.split(" ")[0];
 
   const hour = new Date().getHours();
@@ -137,10 +136,10 @@ export function HomeScreen({
               <Users size={20} style={{ color: "var(--brand-emerald)" }} />
             </div>
             <span style={{ color: "var(--brand-text)", fontSize: 24, fontWeight: 700 }}>
-              {patients.length}
+              {patients.filter((p) => !p.inativo).length}
             </span>
             <span style={{ color: "var(--brand-text-muted)", fontSize: 12, fontWeight: 500 }}>
-              Pacientes cadastrados
+              Pacientes ativos
             </span>
           </div>
 

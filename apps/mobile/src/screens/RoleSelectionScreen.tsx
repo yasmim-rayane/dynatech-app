@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, Stethoscope, UserCircle } from "lucide-react";
-import type { UserRole } from "../services/mockData";
+import type { UserRole } from "../contexts/AuthContext";
 
 export function RoleSelectionScreen({
   onBack,

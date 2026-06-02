@@ -257,7 +257,7 @@ export function TutorialScreen({
           paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 4,
-          paddingBottom: 48,
+          paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
           background:
             "linear-gradient(to top, var(--brand-card) 70%, transparent)",
         }}

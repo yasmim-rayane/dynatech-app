@@ -56,7 +56,7 @@ export function PatientBenefitsScreen({ onContinue }: { onContinue: () => void }
         </div>
       </div>
 
-      <div className="p-6 safe-bottom">
+      <div className="p-6" style={{ paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))" }}>
         <button
           onClick={onContinue}
           className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"

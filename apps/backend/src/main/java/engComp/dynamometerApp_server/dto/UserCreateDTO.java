@@ -10,9 +10,8 @@ public class UserCreateDTO {
     @NotBlank(message = "Nome obrigatório")
     private String name;
 
-    @NotBlank(message = "Username obrigatório")
     @Size(max = 15, message = "Username deve ter no máximo 15 caracteres")
-    private String username;
+    private String userName;
 
     @NotNull(message = "Data de nascimento obrigatória")
     private LocalDate dataNascimento;
@@ -21,7 +20,6 @@ public class UserCreateDTO {
     @Email(message = "Email inválido")
     private String email;
 
-    @NotBlank(message = "Senha obrigatória")
     @Size(max = 12, message = "Senha deve ter no máximo 12 caracteres")
     private String password;
 
@@ -44,8 +42,8 @@ public class UserCreateDTO {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getUsername() { return userName; }
+    public void setUsername(String username) { this.userName = username; }
 
     public LocalDate getDataNascimento() { return dataNascimento; }
     public void setDataNascimento(LocalDate dataNascimento) { this.dataNascimento = dataNascimento; }

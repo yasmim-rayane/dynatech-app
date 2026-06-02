@@ -10,7 +10,8 @@ import {
 } from "recharts";
 import { FileText } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
-import { MOCK_PATIENT_RESULTS } from "../services/mockData";
+import { useAuth } from "../contexts/AuthContext";
+import * as api from "../services/api";
 import type { ResultResponse } from "../services/api";
 
 type ForceType = "palmar" | "pinca";
@@ -40,11 +41,15 @@ export function PatientHistoryScreen() {
   const [pincaSub, setPincaSub] = useState<PincaSub>("indicador");
   const [range, setRange] = useState<"15" | "30" | "60">("30");
   const { theme } = useTheme();
+  const { email } = useAuth();
   const [allResults, setAllResults] = useState<ResultResponse[]>([]);
 
   useEffect(() => {
-    setAllResults(MOCK_PATIENT_RESULTS);
-  }, []);
+    if (!email) return;
+    api.getAllResults(email).then(setAllResults).catch((e) => {
+      console.error("Erro ao carregar histórico do paciente:", e);
+    });
+  }, [email]);
 
   const grid = theme === "dark" ? "#1F2A44" : "#E2E8F0";
   const tick = theme === "dark" ? "#94A3B8" : "#94A3B8";

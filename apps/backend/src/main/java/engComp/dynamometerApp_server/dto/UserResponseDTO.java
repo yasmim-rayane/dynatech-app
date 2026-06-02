@@ -18,9 +18,15 @@ public class UserResponseDTO {
     private String maoDominante;
     private String inativo;
     private LocalDateTime dataExclusao;
+    private String statusVinculo;
 
-    //Construtor
+    //Construtor padrão
     public UserResponseDTO(User user) {
+        this(user, null);
+    }
+
+    //Construtor com status do vínculo
+    public UserResponseDTO(User user, String statusVinculo) {
         this.id = user.getId();
         this.name = user.getName();
         this.username = user.getUserName();
@@ -32,12 +38,14 @@ public class UserResponseDTO {
         this.maoDominante = user.getMaoDominante();
         this.inativo = user.getInativo();
         this.dataExclusao = user.getDataExclusao();
+        this.statusVinculo = statusVinculo;
     }
 
     //Getters
     public Integer getId() { return id; }
     public String getName() { return name; }
     public String getUsername() { return username; }
+    public String getStatusVinculo() { return statusVinculo; }
     public LocalDate getDataNascimento() { return dataNascimento; }
     public String getEmail() { return email; }
     public Double getPeso() { return peso; }

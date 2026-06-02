@@ -11,7 +11,7 @@ import {
 import { usePatients } from "../contexts/PatientsContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { generoToBack, maoToBack, dateBrToIso } from "../services/api";
-import type { Patient } from "../services/mockData";
+import type { Patient } from "../contexts/PatientsContext";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -74,6 +74,7 @@ export function PatientFormModal({
       : "Selecione",
   );
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (field: string) =>
@@ -107,9 +108,7 @@ export function PatientFormModal({
   async function handleSave() {
     if (!formValid || saving) return;
     setSaving(true);
-
-    // Simula delay
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    setSaveError("");
 
     const data = {
       name: name.trim(),
@@ -121,14 +120,18 @@ export function PatientFormModal({
       altura: Number(altura),
     };
 
-    if (isEditing && patient) {
-      updatePatient(patient.id, data);
-    } else {
-      addPatient(data as any);
+    try {
+      if (isEditing && patient) {
+        await updatePatient(patient.id, data);
+      } else {
+        await addPatient(data as any);
+      }
+      onClose();
+    } catch (e: any) {
+      setSaveError(e?.backendMessage || "Erro ao salvar. Tente novamente.");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    onClose();
   }
 
   const inputStyle: React.CSSProperties = {
@@ -489,6 +492,21 @@ export function PatientFormModal({
               </div>
             </div>
           </div>
+
+          {/* Erro de salvamento */}
+          {saveError && (
+            <div
+              className="mt-4 px-4 py-3 rounded-xl text-center animate-fadeIn"
+              style={{
+                background: "var(--brand-danger-soft, rgba(239,68,68,0.1))",
+                color: "var(--brand-danger)",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              {saveError}
+            </div>
+          )}
 
           {/* Botão Salvar */}
           <button

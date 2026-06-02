@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, Mail, AlertCircle, Loader2, ShieldAlert, X } from "lucide-react";
-import { checkPatientEmail } from "../services/mockData";
+import { getUser } from "../services/api";
 import { useTheme } from "../contexts/ThemeContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -25,13 +25,12 @@ export function PatientEmailScreen({
     if (!emailOk || isLoading) return;
     setIsLoading(true);
     try {
-      const { exists } = await checkPatientEmail(email.trim());
-      if (exists) {
-        onEmailValid(email.trim());
-      } else {
-        setShowDenied(true);
-      }
-    } catch {
+      // Verifica se o email existe no backend (cadastrado por um profissional)
+      await getUser(email.trim());
+      // Se não lançou erro, o user existe → pode criar conta
+      onEmailValid(email.trim());
+    } catch (e: any) {
+      // 404 = email não cadastrado por profissional
       setShowDenied(true);
     } finally {
       setIsLoading(false);

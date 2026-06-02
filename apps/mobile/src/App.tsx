@@ -56,12 +56,12 @@ function Shell() {
 
   // Auto-login / Logout observer
   React.useEffect(() => {
-    if (auth.user && stage === "login") {
+    if (auth.email && stage === "login") {
       setStage("app");
-    } else if (!auth.user && stage === "app") {
+    } else if (!auth.email && stage === "app") {
       setStage("login");
     }
-  }, [auth.user, stage]);
+  }, [auth.email, stage]);
 
   // Escutar notificações locais que disparam (lembretes agendados)
   React.useEffect(() => {

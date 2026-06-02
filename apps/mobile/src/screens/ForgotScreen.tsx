@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Mail, AlertCircle, KeyRound, Lock, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, Mail, AlertCircle, KeyRound, Lock, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
 import * as api from "../services/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -24,6 +24,8 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [stepError, setStepError] = useState("");
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }));
@@ -252,16 +254,26 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
                 <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
                   Nova senha
                 </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  onBlur={() => touch("newPassword")}
-                  placeholder="Mínimo 8 caracteres"
-                  maxLength={12}
-                  className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none transition-colors duration-200"
-                  style={touched.newPassword && !pwChecks.valid ? errorInputStyle : inputStyle}
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    onBlur={() => touch("newPassword")}
+                    placeholder="Mínimo 8 caracteres"
+                    maxLength={12}
+                    className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none transition-colors duration-200"
+                    style={touched.newPassword && !pwChecks.valid ? errorInputStyle : inputStyle}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPwd(!showNewPwd)}
+                    className="absolute right-4 top-[22px]"
+                    style={{ color: "var(--brand-text-muted)" }}
+                  >
+                    {showNewPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 
                 {/* Indicadores de senha */}
                 <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
@@ -287,16 +299,26 @@ export function ForgotScreen({ onBack }: { onBack: () => void }) {
                 <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
                   Confirmar nova senha
                 </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onBlur={() => touch("confirmPassword")}
-                  placeholder="Repita a senha"
-                  maxLength={12}
-                  className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none transition-colors duration-200"
-                  style={touched.confirmPassword && !confirmOk ? errorInputStyle : inputStyle}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPwd ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={() => touch("confirmPassword")}
+                    placeholder="Repita a senha"
+                    maxLength={12}
+                    className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none transition-colors duration-200"
+                    style={touched.confirmPassword && !confirmOk ? errorInputStyle : inputStyle}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                    className="absolute right-4 top-[22px]"
+                    style={{ color: "var(--brand-text-muted)" }}
+                  >
+                    {showConfirmPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {touched.confirmPassword && !confirmOk && (
                   <div
                     className="flex items-center gap-1 mt-1.5"

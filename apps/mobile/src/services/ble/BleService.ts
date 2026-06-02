@@ -35,7 +35,7 @@ export class BleService {
       
       // Monitora alterações do estado do bluetooth do aparelho (ligado/desligado)
       await BleClient.startEnabledNotifications((enabled) => {
-        console.log(`Estado do Bluetooth alterado para: ${enabled ? 'Ligado' : 'Desligado'}`);
+
         if (!enabled && this.device) {
           // Se desligar o adaptador, força desconexão lógica
           this.handleDisconnect(this.device.deviceId);
@@ -55,7 +55,7 @@ export class BleService {
    */
   public static async startScan(onDeviceFound: (device: BleDevice, rssi: number) => void): Promise<void> {
     try {
-      console.log('Iniciando scan BLE...');
+
       await BleClient.requestLEScan(
         { services: [BLE_CONFIG.SERVICE_UUID] },
         (result) => {
@@ -87,7 +87,7 @@ export class BleService {
       const deviceId = device.deviceId;
       await BleClient.connect(deviceId, (dId) => this.handleDisconnect(dId));
       this.device = device;
-      console.log(`Conectado ao dispositivo: ${deviceId}`);
+
       
       this.onConnectionStateChangeCallbacks.forEach(cb => cb(true));
 
@@ -99,7 +99,7 @@ export class BleService {
         (value: DataView) => {
           const resultStr = dataViewToText(value);
           const resultKg = parseFloat(resultStr);
-          console.log(`Pico Máximo Recebido: ${resultKg} kg`);
+
           
           if (this.onResultCallback) {
             this.onResultCallback(resultKg);
@@ -115,7 +115,7 @@ export class BleService {
         (value: DataView) => {
           const statusStr = dataViewToText(value);
           const isMeasuring = statusStr === '1';
-          console.log(`Status do ESP32 alterado para: ${isMeasuring ? 'Medindo' : 'Idle'}`);
+
           
           if (this.onStatusCallback) {
             this.onStatusCallback(isMeasuring);
@@ -159,7 +159,7 @@ export class BleService {
         BLE_CONFIG.CHAR_START_UUID,
         data
       );
-      console.log('Comando de START enviado para o ESP32.');
+
     } catch (error) {
       console.error('Erro ao enviar comando de start:', error);
       throw error;
@@ -185,7 +185,7 @@ export class BleService {
    * Handler chamado quando a conexão cai de forma inesperada ou programada
    */
   private static handleDisconnect(deviceId: string): void {
-    console.log(`Dispositivo ${deviceId} desconectado.`);
+
     this.device = null;
     this.onConnectionStateChangeCallbacks.forEach(cb => cb(false));
     if (this.onDisconnectCallback) {

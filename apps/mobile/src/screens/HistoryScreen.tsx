@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { FileText, Table } from "lucide-react";
+import { FileText, Table, FileArchive } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import { usePatients } from "../contexts/PatientsContext";
@@ -58,6 +58,8 @@ export function HistoryScreen() {
   const [range, setRange] = useState<"15" | "30" | "60" | "custom">("30");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
   const { theme } = useTheme();
   const { email } = useAuth(); // (Opcional, caso a view do paciente use isso no futuro)
   const { patients } = usePatients();
@@ -88,6 +90,21 @@ export function HistoryScreen() {
   
   const accentColor = type === "palmar" ? "var(--brand-emerald)" : "var(--brand-cyan)";
   const accentSoft = type === "palmar" ? "var(--brand-emerald-soft)" : "var(--brand-cyan-soft)";
+
+  async function handleGenerateReport() {
+    if (!selectedPatient?.email) return;
+    setReportLoading(true);
+    setReportSuccess(false);
+    try {
+      await api.consolidateResults(selectedPatient.email);
+      setReportSuccess(true);
+      setTimeout(() => setReportSuccess(false), 3000);
+    } catch (e) {
+      console.error("Erro ao gerar relatório:", e);
+    } finally {
+      setReportLoading(false);
+    }
+  }
 
   // Helper: extract the right value from a result based on current filter
   function getResultValue(r: ResultResponse): number | null {
@@ -769,20 +786,29 @@ export function HistoryScreen() {
 
         <div className="flex gap-3 mt-5 mb-2 animate-fadeSlideUp" style={{ animationDelay: '0.1s' }}>
           <button 
+            onClick={handleGenerateReport}
+            disabled={reportLoading}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all active:scale-95 shadow-sm"
+            style={{ background: reportSuccess ? "var(--brand-emerald)" : "var(--brand-blue)", color: "#fff", fontWeight: 600, fontSize: 13 }}
+          >
+            <FileArchive size={18} />
+            {reportLoading ? "Gerando..." : reportSuccess ? "Gerado!" : "Consolidar"}
+          </button>
+          <button 
             onClick={exportToPDF}
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all active:scale-95 shadow-sm"
-            style={{ background: "#EF4444", color: "#fff", fontWeight: 600, fontSize: 14 }}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all active:scale-95 shadow-sm"
+            style={{ background: "#EF4444", color: "#fff", fontWeight: 600, fontSize: 13 }}
           >
             <FileText size={18} />
-            Exportar PDF
+            Baixar PDF
           </button>
           <button 
             onClick={exportToXLSX}
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl transition-all active:scale-95 shadow-sm"
-            style={{ background: "#10B981", color: "#fff", fontWeight: 600, fontSize: 14 }}
+            className="flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-2xl transition-all active:scale-95 shadow-sm"
+            style={{ background: "#10B981", color: "#fff", fontWeight: 600, fontSize: 13 }}
           >
             <Table size={18} />
-            Exportar Tabela
+            Baixar XLSX
           </button>
         </div>
 

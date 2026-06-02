@@ -26,12 +26,12 @@ export function ProfessionalProfileScreen({
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
-  const { user } = useAuth();
+  const { user, doctorData, email: authEmail } = useAuth();
 
-  const userName = user?.name ?? "Profissional";
+  const userName = doctorData?.name || user?.name || "Profissional";
   const userInitials = userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const userEmail = user?.email ?? "";
-  const userUsername = user?.username ?? "";
+  const userEmail = doctorData?.email || user?.email || authEmail || "";
+  const userUsername = doctorData?.userName || user?.username || "";
 
   type Item = {
     Icon: typeof User;
