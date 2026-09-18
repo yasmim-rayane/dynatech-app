@@ -7,7 +7,7 @@
 {RETURN}
 
 
-
+----------------------
 
 
 **/api/token/sendCode | POST | RequestParam String email**
@@ -36,7 +36,7 @@ void -> é retornado OK - 200 se sucesso ou UNAUTHORIZED - 401 se o token não f
 
 **/api/token**/**resetPassword | POST | RequestParam String email, RequestParam String code, RequestParam String newPassword**
 
-"Permite alterar a senha se o token fornecido e enviado para o email fornecido batem"
+"Permite alterar a senha, para ambos User e Doctor, se o token fornecido e enviado para o email fornecido batem"
 
 
 

@@ -1,6 +1,8 @@
 package engComp.dynamometerApp_server.services;
 
+import engComp.dynamometerApp_server.dto.DoctorHasUserResponseDTO;
 import engComp.dynamometerApp_server.dto.UserUpdateDTO;
+import engComp.dynamometerApp_server.repositories.DoctorHasUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import engComp.dynamometerApp_server.repositories.UserRepository;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -42,11 +45,10 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    /**
-     * Verifica se a senha em texto puro confere com o hash armazenado.
-     * Também suporta senhas legadas em texto puro (migração gradual).
-     */
     public boolean checkPassword(String rawPassword, String storedPassword) {
+        if (storedPassword == null) {
+            return false;
+        }
         // Se a senha armazenada começa com "$2a$" ou "$2b$", é um hash BCrypt
         if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$")) {
             return passwordEncoder.matches(rawPassword, storedPassword);

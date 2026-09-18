@@ -1,5 +1,6 @@
 package engComp.dynamometerApp_server.controllers;
 
+import engComp.dynamometerApp_server.dto.DoctorHasUserResponseDTO;
 import engComp.dynamometerApp_server.dto.UserCreateDTO;
 import engComp.dynamometerApp_server.dto.UserResponseDTO;
 import engComp.dynamometerApp_server.dto.UserUpdateDTO;

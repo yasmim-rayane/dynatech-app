@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(90) NOT NULL,
-  `userName` VARCHAR(15) NOT NULL UNIQUE,
+  `userName` VARCHAR(15) UNIQUE,
   `email` VARCHAR(45) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(12),
   `dataNascimento` DATE NOT NULL,
   `peso` DECIMAL(5,2) NOT NULL,
   `genero` ENUM('m', 'f', 'ou', 'pn') NOT NULL,
@@ -38,4 +38,27 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     email       VARCHAR(255) NOT NULL,
     code        VARCHAR(6)   NOT NULL,
     expiresAt   DATETIME     NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS doctors (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(90)  NOT NULL,
+    userName    VARCHAR(15)  NOT NULL UNIQUE,
+    email       VARCHAR(45)  NOT NULL UNIQUE,
+    password    VARCHAR(12)  NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS DoctorHasUser (
+    id       INT AUTO_INCREMENT PRIMARY KEY,
+    idDoctor INT NOT NULL,
+    idUser   INT NOT NULL,
+    status   ENUM('s', 'n') NOT NULL DEFAULT 'n',
+    FOREIGN KEY (idDoctor) REFERENCES doctors(id),
+    FOREIGN KEY (idUser)   REFERENCES users(id)
+    );
+
+INSERT INTO users (name, userName, email, password, dataNascimento, peso, genero, altura, maoDominante, inativo, dataExclusao)
+SELECT 'Usuario Teste', 'teste', 'teste@dynatech.com', '123456', '2000-01-01', 70.20, 'm', 170, 'd', NULL, NULL
+    WHERE NOT EXISTS (
+  SELECT 1 FROM users WHERE email = 'teste@dynatech.com' OR userName = 'teste'
 );

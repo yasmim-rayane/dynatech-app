@@ -18,7 +18,7 @@ const API_BASE_URL = Capacitor.isNativePlatform()
   ? (import.meta.env.VITE_API_URL ?? "https://powdering-discharge-washhouse.ngrok-free.dev/api") // URL configurada para ngrok
   : "/api";
 
-// ────────────────────────────── Tipos ───────────────────────────────────
+// ────────────────────────────── Tipos — User ────────────────────────────
 
 /** Resposta do GET /api/user e retornos de criação/atualização */
 export interface UserResponse {
@@ -30,22 +30,23 @@ export interface UserResponse {
   peso: number;
   genero: string;           // "m" | "f" | "ou" | "pn"
   altura: number;
-  maoDominante: string;     // "d" | "e"
+  maoDominante: string;     // "d" | "e" | "a"
   inativo: string | null;
+  statusVinculo?: string;
   dataExclusao: string | null;
 }
 
 /** Dados enviados para POST /api/user/create */
 export interface UserCreatePayload {
   name: string;
-  username: string;
+  userName: string;         // campo do DTO é "userName" (camelCase com N maiúsculo)
   dataNascimento: string;   // "YYYY-MM-DD"
   email: string;
-  password: string;
+  password?: string | null;
   peso: number;
   genero: string;           // "m" | "f" | "ou" | "pn"
   altura: number;
-  maoDominante: string;     // "d" | "e"
+  maoDominante: string;     // "d" | "e" | "a"
 }
 
 /** Dados enviados para PATCH /api/user/updateUserInfo */
@@ -59,6 +60,39 @@ export interface UserUpdatePayload {
   altura?: number;
   maoDominante?: string;
 }
+
+// ────────────────────────────── Tipos — Doctor ──────────────────────────
+
+/** Resposta do GET/POST/PATCH para Doctor */
+export interface DoctorResponse {
+  id: number;
+  name: string;
+  userName: string;
+  email: string;
+}
+
+/** Dados enviados para POST /api/doctor/create */
+export interface DoctorCreatePayload {
+  name: string;
+  userName: string;
+  email: string;
+  password: string;
+}
+
+/** Dados enviados para PATCH /api/doctor */
+export interface DoctorUpdatePayload {
+  name?: string;
+  userName?: string;
+  email?: string;
+}
+
+/** Resposta do GET /api/doctor/doctors (médicos de um paciente) */
+export interface DoctorHasUserResponse {
+  doctorName: string;
+  doctorEmail: string;
+}
+
+// ────────────────────────────── Tipos — Result ──────────────────────────
 
 /** Resposta do GET /api/result/* */
 export interface ResultResponse {
@@ -128,30 +162,49 @@ export interface MonthlyStatsResponse extends Omit<WeeklyStatsResponse, "weekSta
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  backendMessage: string | null;
+
+  constructor(message: string, status: number, backendMessage?: string | null) {
     super(message);
     this.status = status;
+    this.backendMessage = backendMessage ?? null;
     this.name = "ApiError";
   }
 }
 
+/**
+ * Helper de requisição genérico.
+ * Parseia o body JSON de erro do GlobalExceptionHandler para extrair a mensagem real.
+ */
 async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 
-      "Content-Type": "application/json", 
+    headers: {
+      "Content-Type": "application/json",
       "ngrok-skip-browser-warning": "true", // Evita a tela de aviso do ngrok free
-      ...options.headers as Record<string, string> 
+      ...options.headers as Record<string, string>
     },
     ...options,
   });
 
   if (!res.ok) {
+    // Tentar parsear corpo de erro JSON do GlobalExceptionHandler
+    let backendMessage: string | null = null;
+    try {
+      const errorBody = await res.json();
+      if (errorBody?.message) {
+        backendMessage = errorBody.message;
+      }
+    } catch {
+      // Body não é JSON — sem problema
+    }
+
     throw new ApiError(
-      `HTTP ${res.status}: ${res.statusText}`,
+      backendMessage || `HTTP ${res.status}: ${res.statusText}`,
       res.status,
+      backendMessage,
     );
   }
 
@@ -209,7 +262,7 @@ export function dateIsoToBr(iso: string): string {
 // ────────────────────────── User Endpoints ──────────────────────────────
 
 /** POST /api/user/login — retorna void; lança ApiError(401) se senha errada, ApiError(404) se não encontrado */
-export async function login(email: string, password: string): Promise<void> {
+export async function loginUser(email: string, password: string): Promise<void> {
   await request<void>(`/user/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
     method: "POST",
   });
@@ -241,6 +294,62 @@ export async function deactivateAccount(email: string): Promise<UserResponse> {
   return request<UserResponse>(`/user/deactivateAcc?email=${encodeURIComponent(email)}`, {
     method: "PATCH",
   });
+}
+
+// ────────────────────────── Doctor Endpoints ────────────────────────────
+
+/** GET /api/doctor?email= */
+export async function getDoctor(email: string): Promise<DoctorResponse> {
+  return request<DoctorResponse>(`/doctor?email=${encodeURIComponent(email)}`);
+}
+
+/** POST /api/doctor/login — retorna void; lança ApiError(401) se senha errada, ApiError(404) se não encontrado */
+export async function loginDoctor(email: string, password: string): Promise<void> {
+  await request<void>(`/doctor/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+    method: "POST",
+  });
+}
+
+/** POST /api/doctor/create */
+export async function createDoctor(data: DoctorCreatePayload): Promise<DoctorResponse> {
+  return request<DoctorResponse>("/doctor/create", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/** PATCH /api/doctor?email= */
+export async function updateDoctor(email: string, data: DoctorUpdatePayload): Promise<DoctorResponse> {
+  return request<DoctorResponse>(`/doctor?email=${encodeURIComponent(email)}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/** GET /api/doctor/users?email= — retorna os pacientes vinculados ao médico */
+export async function getUsersByDoctor(email: string): Promise<UserResponse[]> {
+  return request<UserResponse[]>(`/doctor/users?email=${encodeURIComponent(email)}`);
+}
+
+/** GET /api/doctor/doctors?email= — retorna os médicos vinculados ao paciente */
+export async function getDoctorsByUser(email: string): Promise<DoctorHasUserResponse[]> {
+  return request<DoctorHasUserResponse[]>(`/doctor/doctors?email=${encodeURIComponent(email)}`);
+}
+
+/** POST /api/doctor/addUser — cria vínculo entre médico e paciente */
+export async function addUserToDoctor(doctorEmail: string, userEmail: string): Promise<void> {
+  await request<void>(
+    `/doctor/addUser?doctorEmail=${encodeURIComponent(doctorEmail)}&userEmail=${encodeURIComponent(userEmail)}`,
+    { method: "POST" },
+  );
+}
+
+/** PATCH /api/doctor/toggleStatus — inverte status do vínculo (s ↔ n) */
+export async function toggleDoctorUserStatus(doctorEmail: string, userEmail: string): Promise<void> {
+  await request<void>(
+    `/doctor/toggleStatus?doctorEmail=${encodeURIComponent(doctorEmail)}&userEmail=${encodeURIComponent(userEmail)}`,
+    { method: "PATCH" },
+  );
 }
 
 // ──────────────────────── Token / Reset Senha ───────────────────────────
@@ -308,7 +417,22 @@ export async function createResult(data: ResultCreatePayload): Promise<ResultRes
   });
 }
 
+/** POST /api/result/consolidate?email= — consolida resultados do dia em um único registro */
+export async function consolidateResults(email: string): Promise<ResultResponse> {
+  return request<ResultResponse>(`/result/consolidate?email=${encodeURIComponent(email)}`, {
+    method: "POST",
+  });
+}
+
 /** DELETE /api/result/delete?id= */
 export async function deleteResult(id: number): Promise<void> {
   await request<void>(`/result/delete?id=${id}`, { method: "DELETE" });
 }
+
+// ──────────────── Compatibilidade — alias "login" legado ────────────────
+
+/**
+ * @deprecated Use loginUser() ou loginDoctor() diretamente.
+ * Mantido para compatibilidade com código legado.
+ */
+export const login = loginUser;

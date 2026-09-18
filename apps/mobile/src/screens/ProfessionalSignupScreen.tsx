@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, AlertCircle, CheckCircle2, Calendar, Loader2 } from "lucide-react";
+import { ChevronLeft, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { generoToBack, maoToBack, dateBrToIso } from "../services/api";
 
 /* ── Helpers de validação ──────────────────────────────────── */
 
@@ -18,23 +17,9 @@ function validatePassword(pw: string) {
   return { ...checks, valid: Object.values(checks).every(Boolean) };
 }
 
-/** Aceita DD/MM/AAAA — valida existência real do dia */
-function validateDate(raw: string) {
-  const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!m) return false;
-  const [, dd, mm, yyyy] = m.map(Number);
-  const d = new Date(yyyy, mm - 1, dd);
-  return (
-    d.getFullYear() === yyyy &&
-    d.getMonth() === mm - 1 &&
-    d.getDate() === dd &&
-    d <= new Date() // não pode ser no futuro
-  );
-}
-
 /* ── Componente ────────────────────────────────────────────── */
 
-export function SignupScreen({
+export function ProfessionalSignupScreen({
   onBack,
   onComplete,
 }: {
@@ -47,12 +32,9 @@ export function SignupScreen({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [dob, setDob] = useState("");
-  const [peso, setPeso] = useState("");
-  const [altura, setAltura] = useState("");
-  const [genero, setGenero] = useState("Selecione");
-  const [maoDominante, setMaoDominante] = useState("Selecione");
   const [submitError, setSubmitError] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   /* Campos "tocados" — exibem erro somente após interação */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -63,13 +45,8 @@ export function SignupScreen({
   const emailOk = EMAIL_RE.test(email);
   const pwChecks = validatePassword(password);
   const confirmOk = confirm.length > 0 && confirm === password;
-  const dobOk = validateDate(dob);
   const nameOk = name.trim().length >= 2;
   const usernameOk = username.trim().length >= 4;
-  const pesoOk = peso.length > 0 && Number(peso) > 0;
-  const alturaOk = altura.length > 0 && Number(altura) > 0;
-  const generoOk = genero !== "Selecione";
-  const maoOk = maoDominante !== "Selecione";
 
   /* Formulário inteiro válido */
   const formValid = useMemo(
@@ -78,23 +55,9 @@ export function SignupScreen({
       emailOk &&
       usernameOk &&
       pwChecks.valid &&
-      confirmOk &&
-      dobOk &&
-      pesoOk &&
-      alturaOk &&
-      generoOk &&
-      maoOk,
-    [nameOk, emailOk, usernameOk, pwChecks.valid, confirmOk, dobOk, pesoOk, alturaOk, generoOk, maoOk]
+      confirmOk,
+    [nameOk, emailOk, usernameOk, pwChecks.valid, confirmOk]
   );
-
-  /* Máscara de data DD/MM/AAAA */
-  function handleDobChange(raw: string) {
-    // remove tudo que não é dígito
-    let digits = raw.replace(/\D/g, "").slice(0, 8);
-    if (digits.length > 4) digits = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4);
-    else if (digits.length > 2) digits = digits.slice(0, 2) + "/" + digits.slice(2);
-    setDob(digits);
-  }
 
   const inputStyle: React.CSSProperties = {
     background: "var(--brand-input-bg)",
@@ -141,12 +104,31 @@ export function SignupScreen({
           <ChevronLeft size={20} style={{ color: "var(--brand-text)" }} />
         </button>
         <h2 style={{ color: "var(--brand-text)", fontSize: 18, fontWeight: 600 }}>
-          Criar conta
+          Cadastro profissional
         </h2>
       </div>
 
       {/* Fields */}
       <div className="flex-1 overflow-y-auto px-6 pb-32 pt-4 space-y-4 scroll-y no-scrollbar">
+        <div className="animate-fadeSlideUp mb-2">
+          <h3
+            style={{
+              color: "var(--brand-text)",
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Crie sua conta
+          </h3>
+          <p
+            style={{ color: "var(--brand-text-muted)", fontSize: 13 }}
+            className="mt-1"
+          >
+            Preencha os dados para acessar o Dyna Tech como profissional.
+          </p>
+        </div>
+
         {/* Nome */}
         <div className="animate-fadeSlideUp" style={{ animationDelay: "0s" }}>
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
@@ -156,7 +138,7 @@ export function SignupScreen({
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => touch("name")}
-            placeholder="Maria Silva"
+            placeholder="Dr. João Mendes"
             maxLength={90}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.name && !nameOk ? errorInputStyle : inputStyle}
@@ -178,7 +160,7 @@ export function SignupScreen({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => touch("email")}
-            placeholder="maria@email.com"
+            placeholder="profissional@clinica.com"
             maxLength={45}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.email && !emailOk ? errorInputStyle : inputStyle}
@@ -199,7 +181,7 @@ export function SignupScreen({
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onBlur={() => touch("username")}
-            placeholder="@maria"
+            placeholder="@drjoao"
             maxLength={15}
             className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
             style={touched.username && !usernameOk ? errorInputStyle : inputStyle}
@@ -216,16 +198,26 @@ export function SignupScreen({
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Senha
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => touch("password")}
-            placeholder="••••••••"
-            maxLength={12}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.password && !pwChecks.valid ? errorInputStyle : inputStyle}
-          />
+          <div className="relative mt-1.5">
+            <input
+              type={showPwd ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => touch("password")}
+              placeholder="••••••••"
+              maxLength={12}
+              className="w-full h-12 pl-4 pr-11 rounded-xl outline-none"
+              style={touched.password && !pwChecks.valid ? errorInputStyle : inputStyle}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPwd((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--brand-text-faint)" }}
+            >
+              {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {/* Checklist de senha — aparece assim que começa a digitar */}
           {(touched.password || password.length > 0) && (
             <div className="mt-2 space-y-1">
@@ -243,16 +235,26 @@ export function SignupScreen({
           <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
             Confirmar senha
           </label>
-          <input
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            onBlur={() => touch("confirm")}
-            placeholder="••••••••"
-            maxLength={12}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.confirm && !confirmOk ? errorInputStyle : inputStyle}
-          />
+          <div className="relative mt-1.5">
+            <input
+              type={showConfirm ? "text" : "password"}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              onBlur={() => touch("confirm")}
+              placeholder="••••••••"
+              maxLength={12}
+              className="w-full h-12 pl-4 pr-11 rounded-xl outline-none"
+              style={touched.confirm && !confirmOk ? errorInputStyle : inputStyle}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm((v) => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--brand-text-faint)" }}
+            >
+              {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {touched.confirm && confirm.length > 0 && !confirmOk && (
             <div style={errorTextStyle}>
               <AlertCircle size={12} /> As senhas não coincidem
@@ -261,148 +263,6 @@ export function SignupScreen({
           {confirmOk && (
             <div style={validTextStyle}>
               <CheckCircle2 size={12} /> Senhas coincidem
-            </div>
-          )}
-        </div>
-
-        {/* Data de nascimento */}
-        <div className="animate-fadeSlideUp" style={{ animationDelay: "0.25s" }}>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-            Data de nascimento
-          </label>
-          <div className="relative mt-1.5">
-            <input
-              inputMode="numeric"
-              value={dob}
-              onChange={(e) => handleDobChange(e.target.value)}
-              onBlur={() => touch("dob")}
-              placeholder="DD/MM/AAAA"
-              maxLength={10}
-              className="w-full h-12 pl-4 pr-12 rounded-xl outline-none"
-              style={touched.dob && !dobOk ? errorInputStyle : inputStyle}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center overflow-hidden">
-              <Calendar size={20} style={{ color: "var(--brand-text-faint)" }} />
-              <input
-                type="date"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={(e) => {
-                  if(e.target.value) {
-                    const [y, m, d] = e.target.value.split('-');
-                    handleDobChange(`${d}/${m}/${y}`);
-                  }
-                }}
-              />
-            </div>
-          </div>
-          {touched.dob && dob.length > 0 && !dobOk && (
-            <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Data inválida. Use o formato DD/MM/AAAA
-            </div>
-          )}
-          {dobOk && (
-            <div style={validTextStyle}>
-              <CheckCircle2 size={12} /> Data válida
-            </div>
-          )}
-        </div>
-
-        {/* Peso e Altura */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-              Peso (kg)
-            </label>
-            <input
-              inputMode="decimal"
-              placeholder="70.00"
-              value={peso}
-              onChange={(e) => {
-                let val = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-                const parts = val.split(".");
-                if (parts[0].length > 3) parts[0] = parts[0].slice(0, 3);
-                if (parts.length > 1) parts[1] = parts[1].slice(0, 2);
-                setPeso(parts.slice(0, 2).join("."));
-              }}
-              onBlur={() => {
-                touch("peso");
-                if(peso) setPeso(Number(peso).toFixed(2));
-              }}
-              maxLength={6}
-              className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-              style={touched.peso && !pesoOk ? errorInputStyle : inputStyle}
-            />
-            {touched.peso && !pesoOk && (
-              <div style={errorTextStyle}>
-                <AlertCircle size={12} /> Informe seu peso
-              </div>
-            )}
-          </div>
-          <div>
-            <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-              Altura (cm)
-            </label>
-            <input
-              inputMode="numeric"
-              placeholder="170"
-              value={altura}
-              onChange={(e) => setAltura(e.target.value.replace(/\D/g, "").slice(0, 3))}
-              onBlur={() => touch("altura")}
-              maxLength={3}
-              className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-              style={touched.altura && !alturaOk ? errorInputStyle : inputStyle}
-            />
-            {touched.altura && !alturaOk && (
-              <div style={errorTextStyle}>
-                <AlertCircle size={12} /> Informe sua altura
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Gênero */}
-        <div>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-            Gênero
-          </label>
-          <select
-            value={genero}
-            onChange={(e) => { setGenero(e.target.value); touch("genero"); }}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.genero && !generoOk ? errorInputStyle : inputStyle}
-          >
-            <option>Selecione</option>
-            <option>Feminino</option>
-            <option>Masculino</option>
-            <option>Outro</option>
-            <option>Prefiro não dizer</option>
-          </select>
-          {touched.genero && !generoOk && (
-            <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Selecione seu gênero
-            </div>
-          )}
-        </div>
-
-        {/* Mão dominante */}
-        <div>
-          <label style={{ fontSize: 13, color: "var(--brand-text)", fontWeight: 500 }}>
-            Mão dominante
-          </label>
-          <select
-            value={maoDominante}
-            onChange={(e) => { setMaoDominante(e.target.value); touch("mao"); }}
-            className="w-full h-12 px-4 mt-1.5 rounded-xl outline-none"
-            style={touched.mao && !maoOk ? errorInputStyle : inputStyle}
-          >
-            <option>Selecione</option>
-            <option>Direita</option>
-            <option>Esquerda</option>
-            <option>Ambidestro</option>
-          </select>
-          {touched.mao && !maoOk && (
-            <div style={errorTextStyle}>
-              <AlertCircle size={12} /> Selecione sua mão dominante
             </div>
           )}
         </div>
@@ -415,7 +275,7 @@ export function SignupScreen({
           paddingLeft: 24,
           paddingRight: 24,
           paddingTop: 4,
-          paddingBottom: 48,
+          paddingBottom: "calc(48px + env(safe-area-inset-bottom, 0px))",
           background:
             "linear-gradient(to top, var(--brand-card) 70%, transparent)",
         }}
@@ -438,16 +298,11 @@ export function SignupScreen({
             if (!formValid || auth.isLoading) return;
             setSubmitError("");
             try {
-              await auth.signup({
+              await auth.signupDoctor({
                 name: name.trim(),
-                username: username.trim(),
+                userName: username.trim(),
                 email: email.trim(),
                 password,
-                dataNascimento: dateBrToIso(dob),
-                peso: Number(peso),
-                altura: Number(altura),
-                genero: generoToBack(genero),
-                maoDominante: maoToBack(maoDominante),
               });
               onComplete();
             } catch (e: any) {

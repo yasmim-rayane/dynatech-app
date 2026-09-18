@@ -23,11 +23,17 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const int HX711_DOUT = 17; // Pino de dados do HX711
 const int HX711_SCK = 16;  // Pino de clock do HX711
 
+// ==========================================
+// CONFIGURAÇÕES DO BOTÃO FÍSICO
+// ==========================================
+#define BUTTON_PIN 4 // Pino para o botão de início da medição
+
 HX711 scale;
 
-// Valor de calibração. DEVE SER AJUSTADO DE ACORDO COM A SUA CÉLULA DE CARGA!
-// Para calibrar: coloque um peso conhecido (ex: 1kg) e ajuste o fator até a leitura ser 1.0.
-float CALIBRATION_FACTOR = 420.0; 
+// Valor de calibração (fator de escala). 
+// Como um aperto retorna ~350.000 sem escala, dividindo por 10000 teremos ~35kg.
+// Para calibrar com exatidão: coloque um peso conhecido de 1kg e ajuste o fator até a leitura ser 1.0.
+float CALIBRATION_FACTOR = 10000.0; 
 
 // ==========================================
 // CONFIGURAÇÕES BLE
@@ -59,6 +65,22 @@ bool showPeak = false;
 unsigned long peakDisplayStartTime = 0;
 const unsigned long PEAK_DISPLAY_DURATION_MS = 10000; // 10 segundos
 
+// Controle de estado do botão (Edge Detection e Auto-Polaridade)
+int idleButtonState = LOW;
+int activeButtonState = HIGH;
+int lastButtonState = LOW;
+
+// Função auxiliar para atualizar o display no modo ocioso
+void showIdleDisplay() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.println("Dynamometer");
+  display.println("Esperando medicao");
+  display.println("iniciar...");
+  display.display();
+}
+
 // ==========================================
 // CALLBACKS BLE
 // ==========================================
@@ -67,24 +89,19 @@ class MyServerCallbacks: public BLEServerCallbacks {
       deviceConnected = true;
       Serial.println("App Conectado!");
       
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0,0);
-      display.println("Dynamometer");
-      display.println("App Conectado!");
-      display.display();
+      // Quando conecta, se não estiver medindo nem mostrando o pico, atualiza para Idle
+      if (!isMeasuring && !showPeak) {
+        showIdleDisplay();
+      }
     }
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       Serial.println("App Desconectado. Reiniciando advertising...");
       
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0,0);
-      display.println("Dynamometer");
-      display.println("Aguardando app...");
-      display.display();
+      if (!isMeasuring && !showPeak) {
+        showIdleDisplay();
+      }
       
       // Permite que o app reconecte novamente
       BLEDevice::startAdvertising();
@@ -133,18 +150,26 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Iniciando Dynamometer Firmware...");
 
+  // Configura o pino do botão usando o resistor interno de pull-down
+  pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+  
+  // Pequeno delay para estabilizar o pino
+  delay(100);
+  
+  // Autodetecta a fiação do usuário no momento do boot:
+  // Se o botão ler HIGH sem ninguém apertar, ele foi montado como Pull-Up (ou é NC).
+  // Se ler LOW, foi montado como Pull-Down.
+  idleButtonState = digitalRead(BUTTON_PIN);
+  activeButtonState = (idleButtonState == HIGH) ? LOW : HIGH;
+  lastButtonState = idleButtonState;
+
   // Inicializa Display OLED (SDA=22, SCL=21)
   Wire.begin(22, 21);
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
   } else {
-    display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
-    display.setCursor(0,0);
-    display.println("Dynamometer");
-    display.println("Aguardando app...");
-    display.display();
+    showIdleDisplay();
   }
 
   // Inicializa HX711
@@ -212,7 +237,40 @@ void setup() {
 // LOOP PRINCIPAL
 // ==========================================
 void loop() {
-  if (isMeasuring && deviceConnected) {
+  int currentButtonState = digitalRead(BUTTON_PIN);
+
+  // === CHECAGEM DO BOTÃO FÍSICO (Edge Trigger Auto-Adaptativo) ===
+  // Só inicia se o botão ACABOU de ser pressionado (mudou do estado ocioso para o ativo)
+  if (currentButtonState == activeButtonState && lastButtonState == idleButtonState && !isMeasuring) {
+    Serial.println("Medicao iniciada pelo botao fisico!");
+    isMeasuring = true;
+    maxForceDetected = 0.0;
+    measurementStartTime = millis();
+    lastLiveUpdate = millis();
+    showPeak = false; // Cancela a exibição do pico se iniciar uma nova medição
+    
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+    display.print("Forca:");
+    display.setCursor(0, 16);
+    display.print("0.0 kgf");
+    display.display();
+    
+    // Tara a balança no início da medição
+    scale.tare();
+    
+    // Se o app estiver conectado, avisa que começou a medir
+    if (deviceConnected && pCharStatus) {
+      pCharStatus->setValue("1");
+      pCharStatus->notify();
+    }
+    
+    delay(200); // Debounce simples para o botão
+  }
+
+  // === LÓGICA DE MEDIÇÃO ===
+  if (isMeasuring) {
     unsigned long currentTime = millis();
     
     // Verifica se já se passaram os 5 segundos
@@ -221,9 +279,13 @@ void loop() {
       // Usamos get_units() em vez de read()
       if (scale.is_ready()) {
         float currentForce = scale.get_units(1); // Lê 1 amostra para ser mais rápido
+
+        // Inverte a força caso a célula de carga esteja montada de cabeça para baixo
+        // ou com os fios verde/branco invertidos (gerando valores negativos)
+        currentForce = fabs(currentForce);
         
-        // Evita valores negativos por pequenas flutuações
-        if (currentForce < 0.0) currentForce = 0.0;
+        // Evita mostrar ruídos pequenos quando o dinamômetro está em repouso
+        if (currentForce < 0.2) currentForce = 0.0;
 
         // Atualiza o pico máximo
         if (currentForce > maxForceDetected) {
@@ -233,10 +295,13 @@ void loop() {
         // Live Update via notify (a cada 100ms)
         if (currentTime - lastLiveUpdate >= 100) {
           lastLiveUpdate = currentTime;
-          char liveStr[10];
-          dtostrf(currentForce, 1, 2, liveStr);
-          pCharLive->setValue(liveStr);
-          pCharLive->notify();
+          
+          if (deviceConnected && pCharLive) {
+            char liveStr[10];
+            dtostrf(currentForce, 1, 2, liveStr);
+            pCharLive->setValue(liveStr);
+            pCharLive->notify();
+          }
 
           // Atualiza o Display
           display.clearDisplay();
@@ -257,17 +322,19 @@ void loop() {
       isMeasuring = false;
       Serial.printf("Medição finalizada. Pico alcançado: %.2f kg\n", maxForceDetected);
 
-      // Converte o float para string para envio via BLE
-      char resultStr[10];
-      dtostrf(maxForceDetected, 1, 2, resultStr); // Ex: "45.20"
+      // Atualiza o app caso esteja conectado
+      if (deviceConnected) {
+        char resultStr[10];
+        dtostrf(maxForceDetected, 1, 2, resultStr); // Ex: "45.20"
 
-      // Atualiza o characteristic de resultado e notifica o app
-      pCharResult->setValue(resultStr);
-      pCharResult->notify();
+        // Atualiza o characteristic de resultado e notifica o app
+        pCharResult->setValue(resultStr);
+        pCharResult->notify();
 
-      // Atualiza o characteristic de status para Idle (0) e notifica
-      pCharStatus->setValue("0");
-      pCharStatus->notify();
+        // Atualiza o characteristic de status para Idle (0) e notifica
+        pCharStatus->setValue("0");
+        pCharStatus->notify();
+      }
 
       // Exibe o pico no display por 10 segundos
       showPeak = true;
@@ -287,18 +354,12 @@ void loop() {
   if (showPeak && !isMeasuring) {
     if (millis() - peakDisplayStartTime > PEAK_DISPLAY_DURATION_MS) {
       showPeak = false;
-      display.clearDisplay();
-      display.setTextSize(1);
-      display.setCursor(0,0);
-      display.println("Dynamometer");
-      if (deviceConnected) {
-        display.println("Pronto para medir");
-      } else {
-        display.println("Aguardando app...");
-      }
-      display.display();
+      showIdleDisplay();
     }
   }
+
+  // Salva o estado atual do botão para a próxima iteração do loop
+  lastButtonState = currentButtonState;
 
   // Pequeno delay para não travar a CPU e permitir tarefas de background do BLE
   delay(10);

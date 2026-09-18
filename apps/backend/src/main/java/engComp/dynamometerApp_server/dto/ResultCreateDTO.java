@@ -26,17 +26,17 @@ public class ResultCreateDTO {
 
     private LocalDateTime examDate;
 
-    @AssertTrue(message = "pinchMax e palmMax não podem ser nulos ao mesmo tempo")
-    public boolean isPinchOrPalmValid() {
-        //o exame de pinca foi feito?
-        boolean isPinchNotNull = pinchMaxD1!=null&&pinchMaxD2!=null&&pinchMaxD3!=null&&pinchMaxD4!=null&&
-                                 pinchMaxE1!=null&&pinchMaxE2!=null&&pinchMaxE3!=null&&pinchMaxE4!=null;
-        //o exame palmar foi feito?
-        boolean isPalmNotNull = palmMaxD!=null&&palmMaxE!=null;
-
-        //retorna falso quando ambos forem completamente nulos
-        return isPinchNotNull || isPalmNotNull;
-    }
+//    @AssertTrue(message = "pinchMax e palmMax não podem ser nulos ao mesmo tempo")
+//    public boolean isPinchOrPalmValid() {
+//        //o exame de pinca foi feito?
+//        boolean isPinchNotNull = pinchMaxD1!=null&&pinchMaxD2!=null&&pinchMaxD3!=null&&pinchMaxD4!=null&&
+//                                 pinchMaxE1!=null&&pinchMaxE2!=null&&pinchMaxE3!=null&&pinchMaxE4!=null;
+//        //o exame palmar foi feito?
+//        boolean isPalmNotNull = palmMaxD!=null&&palmMaxE!=null;
+//
+//        //retorna falso quando ambos forem completamente nulos
+//        return isPinchNotNull || isPalmNotNull;
+//    }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
