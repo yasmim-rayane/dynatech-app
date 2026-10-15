@@ -71,7 +71,7 @@ export function ProfileScreen({
         { Icon: Scale, label: "Peso", value: userPeso, onClick: onOpenAccount },
         { Icon: Ruler, label: "Altura", value: userAltura, onClick: onOpenAccount },
         { Icon: Hand, label: "Mão dominante", value: userMao, onClick: onOpenAccount },
-        { Icon: Mail, label: "E-mail", value: userEmail, onClick: onOpenAccount },
+        { Icon: Mail, label: "E-mail", onClick: onOpenAccount },
         { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
       ],
     },

@@ -619,9 +619,47 @@ function ResultStep({
 }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [lastVal, setLastVal] = useState<number | null>(null);
   const { addNotification } = useAppNotifications();
   const { user } = useAuth();
   const fingerLabel = finger ? FINGER_OPTS.find(f => f.key === finger)?.label : "";
+
+  useEffect(() => {
+    async function loadLast() {
+      try {
+        const patientEmail = activePatient?.email || email;
+        const results = await api.getAllResults(patientEmail);
+        results.sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+        
+        let found = null;
+        for (const r of results) {
+          if (type === "grip") {
+            const val = side === "right" ? r.palmMaxD : r.palmMaxE;
+            if (val && val > 0) {
+              found = val;
+              break;
+            }
+          } else if (type === "pinch") {
+            const fingerMap: Record<string, string> = { indicador: "1", medio: "2", anelar: "3", minimo: "4" };
+            const idx = finger ? fingerMap[finger] : "1";
+            const val = side === "right" ? (r as any)[`pinchMaxD${idx}`] : (r as any)[`pinchMaxE${idx}`];
+            if (val && val > 0) {
+              found = val;
+              break;
+            }
+          }
+        }
+        setLastVal(found);
+      } catch (err) {
+        console.error("Erro ao carregar último resultado", err);
+      }
+    }
+    loadLast();
+  }, [type, side, finger, email, activePatient]);
+
+  const diff = lastVal !== null ? peak - lastVal : null;
+  const isPositive = diff !== null && diff >= 0;
+
   return (
     <div className="flex flex-col items-center animate-scaleIn">
       <div
@@ -659,17 +697,31 @@ function ResultStep({
             kgf
           </span>
         </div>
-        <span
-          className="inline-block mt-3 rounded-full px-3 py-1"
-          style={{
-            background: "var(--brand-emerald-soft)",
-            color: "var(--brand-emerald)",
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
-          +3.2 kgf vs. última
-        </span>
+        {diff !== null ? (
+          <span
+            className="inline-block mt-3 rounded-full px-3 py-1"
+            style={{
+              background: isPositive ? "var(--brand-emerald-soft)" : "var(--brand-danger-soft, rgba(239,68,68,0.1))",
+              color: isPositive ? "var(--brand-emerald)" : "var(--brand-danger)",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "+" : ""}{diff.toFixed(1)} kgf vs. última
+          </span>
+        ) : (
+          <span
+            className="inline-block mt-3 rounded-full px-3 py-1"
+            style={{
+              background: "var(--brand-chip-bg)",
+              color: "var(--brand-text-muted)",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            Primeira medição
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3 w-full mt-4">
@@ -705,7 +757,7 @@ function ResultStep({
           setSaving(true);
           setSaveError("");
           try {
-            const patientEmail = activePatient?.email || "patient_mock@example.com";
+            const patientEmail = activePatient?.email || email;
     
             // Constrói payload dinâmico. O mock fará parse depois.
             const payload: any = {
@@ -733,7 +785,7 @@ function ResultStep({
 
             // Calcular variações e recordes antes de salvar a atual
             try {
-              const results = await api.getAllResults(email);
+              const results = await api.getAllResults(patientEmail);
               let maxSoFar = 0;
               let sum = 0;
               let count = 0;

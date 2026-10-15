@@ -199,9 +199,9 @@ export function ProfessionalHistoryScreen() {
     const max = Math.max(a, b);
     if (max === 0) return { color: [0, 128, 0], label: "" };
     const pct = Math.abs(a - b) / max * 100;
-    if (pct > 20) return { color: [220, 38, 38], label: `⚠ ${pct.toFixed(0)}% diferença` };
-    if (pct >= 10) return { color: [202, 138, 4], label: `${pct.toFixed(0)}% diferença` };
-    return { color: [0, 128, 0], label: "✓ Musculaturas equilibradas" };
+    if (pct > 20) return { color: [220, 38, 38], label: `[!] ${pct.toFixed(0)}% diferenca` };
+    if (pct >= 10) return { color: [202, 138, 4], label: `${pct.toFixed(0)}% diferenca` };
+    return { color: [0, 128, 0], label: "Equilibrado" };
   }
 
   /** Gera a logo DynaTech como imagem base64 via canvas */
@@ -333,7 +333,8 @@ export function ProfessionalHistoryScreen() {
       // Monta tabela a partir dos resultados reais filtrados
       const body: any[][] = [];
       filteredResults.forEach(r => {
-        const d = new Date(r.examDate);
+        const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
+        const d = new Date(parsedDateStr);
         const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
         const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 
@@ -401,10 +402,13 @@ export function ProfessionalHistoryScreen() {
       const legendY = (doc as any).lastAutoTable?.finalY + 8 || tableStartY + 60;
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text("Legenda de cores:", m, legendY);
-      doc.setFillColor(220, 38, 38);  doc.circle(m + 2, legendY + 5, 1.5, "F"); doc.text("Vermelho: diferença > 20% — desbalanço significativo", m + 6, legendY + 6);
-      doc.setFillColor(202, 138, 4);   doc.circle(m + 2, legendY + 10, 1.5, "F"); doc.text("Amarelo: diferença entre 10% e 20% — atenção", m + 6, legendY + 11);
-      doc.setFillColor(0, 128, 0);     doc.circle(m + 2, legendY + 15, 1.5, "F"); doc.text("Verde: diferença < 10% — musculaturas equilibradas", m + 6, legendY + 16);
+      doc.text("Legenda de analise:", m, legendY);
+      doc.setFillColor(220, 38, 38);  doc.circle(m + 2, legendY + 5, 1.5, "F"); doc.text("Vermelho: diferenca > 20% -- desbalanco significativo", m + 6, legendY + 6);
+      doc.setFillColor(202, 138, 4);   doc.circle(m + 2, legendY + 10, 1.5, "F"); doc.text("Amarelo: diferenca entre 10% e 20% -- atencao", m + 6, legendY + 11);
+      doc.setFillColor(0, 128, 0);     doc.circle(m + 2, legendY + 15, 1.5, "F"); doc.text("Verde: diferenca < 10% -- musculaturas equilibradas", m + 6, legendY + 16);
+      
+      doc.setFontSize(6.5);
+      doc.text("Fonte: American Society of Hand Therapists (ASHT) - Diretrizes de Avaliacao de Forca Bilateral", m, legendY + 23);
 
       const pdfBase64 = doc.output("datauristring").split(",")[1];
       const typeStr = type === "palmar" ? "Palmar" : "Pinca";
@@ -436,7 +440,8 @@ export function ProfessionalHistoryScreen() {
       if (type === "palmar") {
         rows.push(["Data", "Hora", "Direita (kgf)", "Esquerda (kgf)", "Análise"]);
         filteredResults.forEach(r => {
-          const d = new Date(r.examDate);
+          const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
+          const d = new Date(parsedDateStr);
           const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
           const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
           const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
@@ -459,7 +464,8 @@ export function ProfessionalHistoryScreen() {
           { key: "minimo", label: "Mínimo", dField: "pinchMaxD4", eField: "pinchMaxE4" },
         ];
         filteredResults.forEach(r => {
-          const d = new Date(r.examDate);
+          const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
+          const d = new Date(parsedDateStr);
           const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
           fingerMap.forEach(f => {
             const dirVal = r[f.dField] as number | null;

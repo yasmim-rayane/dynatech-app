@@ -213,52 +213,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      // Passo 1: Enviar código de reset para o email do paciente
-      await api.sendResetCode(data.email);
+      // Tenta fazer o update com o username e senha definidos pelo paciente
+      await api.updateUser(data.email, { username: data.username, password: data.password });
 
-      // NOTA: O código foi enviado por email. O paciente precisa inseri-lo.
-      // Como o fluxo de PatientSignupScreen não tem campo de código,
-      // salvamos os dados parciais e redirecionamos para uma tela de verificação.
-      // Porém, para manter o fluxo existente da UI, vamos salvar o estado
-      // e marcar que a conta está pendente de ativação.
-
-      // Tentamos fazer login para verificar se já tem senha definida
-      try {
-        await api.loginUser(data.email, data.password);
-        // Se chegou aqui, o user já tem senha e conseguiu logar
-        const userData = await api.getUser(data.email);
-        setUser(userData);
-        setDoctorData(null);
-        setEmail(data.email);
-        setUserRoleState("patient");
-        await persistSession(userData, data.email, "patient", null);
-        return;
-      } catch {
-        // Senha não bate ou user não tem senha — continuar com fluxo de reset
-      }
-
-      // Armazena dados pendentes — o paciente precisa inserir o código enviado por email
-      // Para agora, vamos fazer o login após o set de senha ser concluído
-      // Salvar os dados do paciente no session para usar depois
+      // Após o update, faz o login para obter a sessão
+      await api.loginUser(data.email, data.password);
+      
       const userData = await api.getUser(data.email);
-
-      // Atualizar username se necessário
-      if (data.username) {
-        try {
-          const updatedUser = await api.updateUser(data.email, { username: data.username });
-          setUser(updatedUser);
-        } catch {
-          setUser(userData);
-        }
-      } else {
-        setUser(userData);
-      }
-
+      setUser(userData);
       setDoctorData(null);
       setEmail(data.email);
       setUserRoleState("patient");
-      await persistSession(user, data.email, "patient", null);
-
+      await persistSession(userData, data.email, "patient", null);
+      
     } catch (e: any) {
       if (e?.status === 404) {
         setError("E-mail não cadastrado. Solicite ao seu profissional de saúde.");
@@ -269,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   const logout = useCallback(async () => {
 >>>>>>> Stashed changes
