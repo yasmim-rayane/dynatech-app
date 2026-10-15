@@ -7,8 +7,6 @@ import {
   Mail,
   Lock,
   Settings,
-  Bluetooth,
-  Bell,
   LogOut,
   Moon,
   Sun,
@@ -17,9 +15,9 @@ import {
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
-import { generoToFront, maoToFront } from "../services/api";
+import { maoToFront } from "../services/api";
 
-export function ProfileScreen({
+export function PatientProfileScreen({
   onLogout,
   onOpenAccount,
   onOpenGeneral,
@@ -32,9 +30,8 @@ export function ProfileScreen({
 }) {
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
-  const { user, doctorData, email: authEmail } = useAuth();
+  const { user } = useAuth();
 
-<<<<<<< Updated upstream:apps/mobile/src/screens/ProfileScreen.tsx
   // Calcula idade a partir de dataNascimento
   const age = user?.dataNascimento ? (() => {
     const [y, m, d] = user.dataNascimento.split("-").map(Number);
@@ -43,19 +40,13 @@ export function ProfileScreen({
     return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
   })() : null;
 
-  const userName = user?.name ?? "Usuário";
+  const userName = user?.name ?? "Paciente";
   const userInitials = userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
   const userEmail = user?.email ?? "";
   const userUsername = user?.username ?? "";
   const userPeso = user?.peso != null ? `${user.peso.toFixed(2)} kg` : "--";
   const userAltura = user?.altura != null ? `${user.altura} cm` : "--";
   const userMao = user?.maoDominante ? maoToFront(user.maoDominante) : "--";
-=======
-  const userName = doctorData?.name || user?.name || "Profissional";
-  const userInitials = userName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-  const userEmail = doctorData?.email || user?.email || authEmail || "";
-  const userUsername = doctorData?.userName || user?.username || "";
->>>>>>> Stashed changes:apps/mobile/src/screens/ProfessionalProfileScreen.tsx
 
   type Item = {
     Icon: typeof User;
@@ -63,15 +54,16 @@ export function ProfileScreen({
     value?: string;
     onClick?: () => void;
   };
+  
   const sections: { title: string; items: Item[] }[] = [
     {
       title: "Configurações de conta",
       items: [
-        { Icon: User, label: "Nome", value: userName, onClick: onOpenAccount },
-        { Icon: Scale, label: "Peso", value: userPeso, onClick: onOpenAccount },
-        { Icon: Ruler, label: "Altura", value: userAltura, onClick: onOpenAccount },
-        { Icon: Hand, label: "Mão dominante", value: userMao, onClick: onOpenAccount },
-        { Icon: Mail, label: "E-mail", onClick: onOpenAccount },
+        { Icon: User, label: "Nome", value: userName }, // Sem onClick = view-only
+        { Icon: Scale, label: "Peso", value: userPeso },
+        { Icon: Ruler, label: "Altura", value: userAltura },
+        { Icon: Hand, label: "Mão dominante", value: userMao },
+        { Icon: Mail, label: "E-mail", value: userEmail, onClick: onOpenAccount },
         { Icon: Lock, label: "Alterar senha", onClick: onOpenAccount },
       ],
     },
@@ -193,9 +185,11 @@ export function ProfileScreen({
                 <button
                   key={it.label}
                   onClick={it.onClick}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-black/5 transition"
+                  disabled={!it.onClick}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-black/5 transition disabled:opacity-80 disabled:active:bg-transparent"
                   style={{
                     borderTop: i === 0 ? "none" : "1px solid var(--brand-border-soft)",
+                    cursor: it.onClick ? "pointer" : "default",
                   }}
                 >
                   <div
@@ -213,7 +207,7 @@ export function ProfileScreen({
                   >
                     {it.value}
                   </span>
-                  <ChevronRight size={16} style={{ color: "var(--brand-text-faint)" }} />
+                  {it.onClick && <ChevronRight size={16} style={{ color: "var(--brand-text-faint)" }} />}
                 </button>
               ))}
             </div>
