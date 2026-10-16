@@ -21,47 +21,24 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-type ForceType = "palmar" | "pinca";
 type PalmarSub = "direita" | "esquerda";
-type PincaSub = "indicador" | "medio" | "anelar" | "minimo";
-type PincaHand = "direita" | "esquerda";
 
 const PALMAR_SUBS: { key: PalmarSub; label: string }[] = [
   { key: "direita", label: "Mão Direita" },
   { key: "esquerda", label: "Mão Esquerda" },
 ];
-const PINCA_SUBS: { key: PincaSub; label: string }[] = [
-  { key: "indicador", label: "Indicador" },
-  { key: "medio", label: "Médio" },
-  { key: "anelar", label: "Anelar" },
-  { key: "minimo", label: "Mínimo" },
-];
-const PINCA_HANDS: { key: PincaHand; label: string }[] = [
-  { key: "direita", label: "Mão Direita" },
-  { key: "esquerda", label: "Mão Esquerda" },
-];
 
 type DataPoint = { name: string; v: number }[];
-const gen = (base: number[], names: string[]): DataPoint =>
-  base.map((v, i) => ({ name: names[i] ?? `P${i + 1}`, v }));
-
-const d15n = ["Dia 1","Dia 3","Dia 5","Dia 7","Dia 9","Dia 11","Dia 13","Dia 15"];
-const d30n = ["Dia 1","Dia 5","Dia 10","Dia 15","Dia 20","Dia 25","Dia 30"];
-const d60n = ["Sem. 1","Sem. 2","Sem. 3","Sem. 4","Sem. 5","Sem. 6","Sem. 7","Sem. 8"];
-const dcn  = ["Med. 1","Med. 2","Med. 3","Med. 4","Med. 5"];
 
 export function ProfessionalHistoryScreen() {
-  const [type, setType] = useState<ForceType>("palmar");
   const [palmarSub, setPalmarSub] = useState<PalmarSub>("direita");
-  const [pincaHand, setPincaHand] = useState<PincaHand>("direita");
-  const [pincaSub, setPincaSub] = useState<PincaSub>("indicador");
   const [range, setRange] = useState<"15" | "30" | "60" | "custom">("30");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reportLoading, setReportLoading] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const { theme } = useTheme();
-  const { email } = useAuth(); // (Opcional, caso a view do paciente use isso no futuro)
+  const { email } = useAuth();
   const { patients } = usePatients();
   
   // Seleciona o primeiro paciente por padrão, se houver
@@ -73,7 +50,6 @@ export function ProfessionalHistoryScreen() {
 
   // Fetch results from API
   useEffect(() => {
-    // Usa um e-mail default para fins de mock caso o paciente não tenha e-mail cadastrado
     const patientEmail = selectedPatient?.email || "patient_mock@example.com";
     if (!selectedPatientId) {
       setAllResults([]);
@@ -88,8 +64,8 @@ export function ProfessionalHistoryScreen() {
   const grid = theme === "dark" ? "#1F2A44" : "#E2E8F0";
   const tick = theme === "dark" ? "#94A3B8" : "#94A3B8";
   
-  const accentColor = type === "palmar" ? "var(--brand-emerald)" : "var(--brand-cyan)";
-  const accentSoft = type === "palmar" ? "var(--brand-emerald-soft)" : "var(--brand-cyan-soft)";
+  const accentColor = "var(--brand-emerald)";
+  const accentSoft = "var(--brand-emerald-soft)";
 
   async function handleGenerateReport() {
     if (!selectedPatient?.email) return;
@@ -106,16 +82,9 @@ export function ProfessionalHistoryScreen() {
     }
   }
 
-  // Helper: extract the right value from a result based on current filter
+  // Helper: extract value from result based on selected hand
   function getResultValue(r: ResultResponse): number | null {
-    if (type === "palmar") {
-      const val = palmarSub === "direita" ? r.palmMaxD : r.palmMaxE;
-      return val && val > 0 ? val : null;
-    }
-    const fingerMap: Record<PincaSub, string> = { indicador: "1", medio: "2", anelar: "3", minimo: "4" };
-    const idx = fingerMap[pincaSub];
-    const key = `pinchMax${pincaHand === "direita" ? "D" : "E"}${idx}` as keyof ResultResponse;
-    const val = r[key] as number | null;
+    const val = palmarSub === "direita" ? r.palmMaxD : r.palmMaxE;
     return val && val > 0 ? val : null;
   }
 
@@ -149,7 +118,7 @@ export function ProfessionalHistoryScreen() {
         return { name, v };
       })
       .filter(Boolean) as DataPoint;
-  }, [filteredResults, type, palmarSub, pincaHand, pincaSub]);
+  }, [filteredResults, palmarSub]);
 
   // Transform to list items
   const list = useMemo(() => {
@@ -160,19 +129,13 @@ export function ProfessionalHistoryScreen() {
         const d = new Date(r.examDate);
         const date = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
         const time = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
-        const subLabel = type === "palmar"
-          ? (palmarSub === "direita" ? "Palmar Direita" : "Palmar Esquerda")
-          : `Pin\u00e7a ${PINCA_SUBS.find(s => s.key === pincaSub)!.label} (${pincaHand === "direita" ? "Dir." : "Esq."})`;
+        const subLabel = palmarSub === "direita" ? "Palmar Direita" : "Palmar Esquerda";
         return { date, time, label: subLabel, value: v };
       })
       .filter(Boolean) as { date: string; time: string; label: string; value: number }[];
-  }, [filteredResults, type, palmarSub, pincaHand, pincaSub]);
+  }, [filteredResults, palmarSub]);
   
   const average = currentData.length > 0 ? currentData.reduce((acc, curr) => acc + curr.v, 0) / currentData.length : 0;
-  
-  const subLabel = type === "palmar"
-    ? (palmarSub === "direita" ? "M\u00e3o Direita" : "M\u00e3o Esquerda")
-    : `${PINCA_SUBS.find(s => s.key === pincaSub)!.label} (${pincaHand === "direita" ? "Dir." : "Esq."})`;
 
   /* ── Dados do paciente selecionado ── */
   const userInfo = useMemo(() => {
@@ -255,7 +218,7 @@ export function ProfessionalHistoryScreen() {
         fileSuffix = "Personalizado";
       }
 
-      const reportType = type === "palmar" ? "Força Palmar" : "Força de Pinça";
+      const reportType = "Força Palmar";
       const brandDark: [number, number, number] = [11, 36, 71];
       const brandGreen: [number, number, number] = [16, 217, 160];
 
@@ -338,45 +301,22 @@ export function ProfessionalHistoryScreen() {
         const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
         const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 
-        if (type === "palmar") {
-          const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
-          const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
-          const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
-          const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
-          let analise = "";
-          if (hasDir && hasEsq) {
-            analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
-          }
-          body.push([dateStr, timeStr, dirVal, esqVal, analise]);
-        } else {
-          // Pinça: uma linha com todos os dedos da mão selecionada
-          const fingerMap: { key: PincaSub; label: string; dField: keyof ResultResponse; eField: keyof ResultResponse }[] = [
-            { key: "indicador", label: "Indicador", dField: "pinchMaxD1", eField: "pinchMaxE1" },
-            { key: "medio", label: "Médio", dField: "pinchMaxD2", eField: "pinchMaxE2" },
-            { key: "anelar", label: "Anelar", dField: "pinchMaxD3", eField: "pinchMaxE3" },
-            { key: "minimo", label: "Mínimo", dField: "pinchMaxD4", eField: "pinchMaxE4" },
-          ];
-          fingerMap.forEach(f => {
-            const dirVal = r[f.dField] as number | null;
-            const esqVal = r[f.eField] as number | null;
-            const hasDir = dirVal != null && dirVal > 0;
-            const hasEsq = esqVal != null && esqVal > 0;
-            if (hasDir || hasEsq) {
-              let analise = "";
-              if (hasDir && hasEsq) analise = diffColor(dirVal!, esqVal!).label;
-              body.push([dateStr, f.label, hasDir ? dirVal!.toFixed(1) : "--", hasEsq ? esqVal!.toFixed(1) : "--", analise]);
-            }
-          });
+        const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
+        const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
+        const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
+        const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
+        let analise = "";
+        if (hasDir && hasEsq) {
+          analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
         }
+        body.push([dateStr, timeStr, dirVal, esqVal, analise]);
       });
 
       if (body.length === 0) {
         body.push(["--", "--", "--", "--", "Sem dados no período"]);
       }
 
-      const tableHead = type === "palmar"
-        ? [["Data", "Hora", "Direita (kgf)", "Esquerda (kgf)", "Análise"]]
-        : [["Data", "Dedo", "Direita (kgf)", "Esquerda (kgf)", "Análise"]];
+      const tableHead = [["Data", "Hora", "Direita (kgf)", "Esquerda (kgf)", "Análise"]];
 
       autoTable(doc, {
         head: tableHead,
@@ -411,8 +351,7 @@ export function ProfessionalHistoryScreen() {
       doc.text("Fonte: American Society of Hand Therapists (ASHT) - Diretrizes de Avaliacao de Forca Bilateral", m, legendY + 23);
 
       const pdfBase64 = doc.output("datauristring").split(",")[1];
-      const typeStr = type === "palmar" ? "Palmar" : "Pinca";
-      const fileName = `DynaTech_${typeStr}_${fileSuffix}.pdf`;
+      const fileName = `DynaTech_Palmar_${fileSuffix}.pdf`;
       const savedFile = await Filesystem.writeFile({ path: fileName, data: pdfBase64, directory: Directory.Cache });
       await Share.share({ title: "Exportar Relatório PDF", url: savedFile.uri, dialogTitle: "Salvar ou compartilhar relatório" });
     } catch (e) {
@@ -437,49 +376,22 @@ export function ProfessionalHistoryScreen() {
       // Monta linhas a partir dos dados reais filtrados
       const rows: any[][] = [];
 
-      if (type === "palmar") {
-        rows.push(["Data", "Hora", "Direita (kgf)", "Esquerda (kgf)", "Análise"]);
-        filteredResults.forEach(r => {
-          const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
-          const d = new Date(parsedDateStr);
-          const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
-          const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
-          const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
-          const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
-          const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
-          const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
-          let analise = "";
-          if (hasDir && hasEsq) {
-            analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
-          }
-          rows.push([dateStr, timeStr, dirVal, esqVal, analise]);
-        });
-      } else {
-        /* Pinça: para cada resultado, mostra todos os dedos com dados */
-        rows.push(["Data", "Dedo", "Direita (kgf)", "Esquerda (kgf)", "Análise"]);
-        const fingerMap: { key: PincaSub; label: string; dField: keyof ResultResponse; eField: keyof ResultResponse }[] = [
-          { key: "indicador", label: "Indicador", dField: "pinchMaxD1", eField: "pinchMaxE1" },
-          { key: "medio", label: "Médio", dField: "pinchMaxD2", eField: "pinchMaxE2" },
-          { key: "anelar", label: "Anelar", dField: "pinchMaxD3", eField: "pinchMaxE3" },
-          { key: "minimo", label: "Mínimo", dField: "pinchMaxD4", eField: "pinchMaxE4" },
-        ];
-        filteredResults.forEach(r => {
-          const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
-          const d = new Date(parsedDateStr);
-          const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
-          fingerMap.forEach(f => {
-            const dirVal = r[f.dField] as number | null;
-            const esqVal = r[f.eField] as number | null;
-            const hasDir = dirVal != null && dirVal > 0;
-            const hasEsq = esqVal != null && esqVal > 0;
-            if (hasDir || hasEsq) {
-              let analise = "";
-              if (hasDir && hasEsq) analise = diffColor(dirVal!, esqVal!).label;
-              rows.push([dateStr, f.label, hasDir ? dirVal!.toFixed(1) : "--", hasEsq ? esqVal!.toFixed(1) : "--", analise]);
-            }
-          });
-        });
-      }
+      rows.push(["Data", "Hora", "Direita (kgf)", "Esquerda (kgf)", "Análise"]);
+      filteredResults.forEach(r => {
+        const parsedDateStr = r.examDate.endsWith("Z") || r.examDate.includes("+") ? r.examDate : r.examDate + "Z";
+        const d = new Date(parsedDateStr);
+        const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
+        const timeStr = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+        const hasDir = r.palmMaxD != null && r.palmMaxD > 0;
+        const hasEsq = r.palmMaxE != null && r.palmMaxE > 0;
+        const dirVal = hasDir ? r.palmMaxD!.toFixed(1) : "--";
+        const esqVal = hasEsq ? r.palmMaxE!.toFixed(1) : "--";
+        let analise = "";
+        if (hasDir && hasEsq) {
+          analise = diffColor(r.palmMaxD!, r.palmMaxE!).label;
+        }
+        rows.push([dateStr, timeStr, dirVal, esqVal, analise]);
+      });
 
       if (rows.length <= 1) {
         rows.push(["--", "--", "--", "--", "Sem dados no período"]);
@@ -491,8 +403,7 @@ export function ProfessionalHistoryScreen() {
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
       const xlsxBase64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-      const typeStr = type === "palmar" ? "Palmar" : "Pinca";
-      const fileName = `DynaTech_${typeStr}_${fileSuffix}.xlsx`;
+      const fileName = `DynaTech_Palmar_${fileSuffix}.xlsx`;
       const savedFile = await Filesystem.writeFile({ path: fileName, data: xlsxBase64, directory: Directory.Cache });
       await Share.share({ title: "Exportar Tabela XLSX", url: savedFile.uri, dialogTitle: "Salvar ou compartilhar tabela" });
     } catch (e) {
@@ -559,92 +470,26 @@ export function ProfessionalHistoryScreen() {
           </div>
         )}
 
-        {/* Tipo Toggle */}
-        <div className="flex gap-2 mt-5">
-          <button
-            onClick={() => setType("palmar")}
-            className="flex-1 py-2.5 rounded-xl transition-all font-semibold text-sm shadow-sm"
-            style={{
-              background: type === "palmar" ? accentColor : "var(--brand-chip-bg)",
-              color: type === "palmar" ? "#fff" : "var(--brand-text-muted)",
-            }}
-          >
-            Preensão Palmar
-          </button>
-          <button
-            onClick={() => setType("pinca")}
-            className="flex-1 py-2.5 rounded-xl transition-all font-semibold text-sm shadow-sm"
-            style={{
-              background: type === "pinca" ? accentColor : "var(--brand-chip-bg)",
-              color: type === "pinca" ? "#fff" : "var(--brand-text-muted)",
-            }}
-          >
-            Força de Pinça
-          </button>
+        {/* Sub-type chips */}
+        <div className="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+          {PALMAR_SUBS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setPalmarSub(s.key)}
+              className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                background: palmarSub === s.key ? accentSoft : "var(--brand-chip-bg)",
+                color: palmarSub === s.key ? accentColor : "var(--brand-text-muted)",
+                border: palmarSub === s.key ? `1.5px solid ${accentColor}` : "1.5px solid transparent",
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
 
-        {/* Sub-type chips */}
-        {type === "palmar" ? (
-          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-            {PALMAR_SUBS.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setPalmarSub(s.key)}
-                className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  background: palmarSub === s.key ? accentSoft : "var(--brand-chip-bg)",
-                  color: palmarSub === s.key ? accentColor : "var(--brand-text-muted)",
-                  border: palmarSub === s.key ? `1.5px solid ${accentColor}` : "1.5px solid transparent",
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Hand selector */}
-            <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
-              {PINCA_HANDS.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setPincaHand(s.key)}
-                  className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: pincaHand === s.key ? accentSoft : "var(--brand-chip-bg)",
-                    color: pincaHand === s.key ? accentColor : "var(--brand-text-muted)",
-                    border: pincaHand === s.key ? `1.5px solid ${accentColor}` : "1.5px solid transparent",
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            {/* Finger selector */}
-            <div className="flex gap-2 mt-2 overflow-x-auto no-scrollbar pb-1">
-              {PINCA_SUBS.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setPincaSub(s.key)}
-                  className="px-3 py-1.5 rounded-full transition-all whitespace-nowrap"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: pincaSub === s.key ? "var(--brand-chip-bg)" : "transparent",
-                    color: pincaSub === s.key ? accentColor : "var(--brand-text-muted)",
-                    border: pincaSub === s.key ? `1.5px solid ${accentColor}` : "1.5px solid var(--brand-border-soft)",
-                  }}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
         <div
           className="flex p-1 rounded-xl mt-4"
           style={{ background: "var(--brand-chip-bg)" }}

@@ -21,29 +21,12 @@ public interface ResultRepository extends JpaRepository<Result,Integer> {
             @Param("d1") LocalDateTime d1,
             @Param("d2") LocalDateTime d2);
 
-
     List<Result> findByUserEmailOrderByExamDateDesc(String email);
 
     List<Result> findByUserIdAndExamDateBetweenOrderByExamDateAsc(int userId, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT " +
             "COUNT(r) as count, " +
-            "AVG(r.pinchMaxD1) as avgPinchD1, " +
-            "AVG(r.pinchMaxD2) as avgPinchD2, " +
-            "AVG(r.pinchMaxD3) as avgPinchD3, " +
-            "AVG(r.pinchMaxD4) as avgPinchD4, " +
-            "AVG(r.pinchMaxE1) as avgPinchE1, " +
-            "AVG(r.pinchMaxE2) as avgPinchE2, " +
-            "AVG(r.pinchMaxE3) as avgPinchE3, " +
-            "AVG(r.pinchMaxE4) as avgPinchE4, " +
-            "MAX(r.pinchMaxD1) as maxPinchD1, " +
-            "MAX(r.pinchMaxD2) as maxPinchD2, " +
-            "MAX(r.pinchMaxD3) as maxPinchD3, " +
-            "MAX(r.pinchMaxD4) as maxPinchD4, " +
-            "MAX(r.pinchMaxE1) as maxPinchE1, " +
-            "MAX(r.pinchMaxE2) as maxPinchE2, " +
-            "MAX(r.pinchMaxE3) as maxPinchE3, " +
-            "MAX(r.pinchMaxE4) as maxPinchE4, " +
             "AVG(r.palmMaxD) as avgPalmD, " +
             "AVG(r.palmMaxE) as avgPalmE, " +
             "MAX(r.palmMaxD) as maxPalmD, " +
@@ -59,22 +42,6 @@ public interface ResultRepository extends JpaRepository<Result,Integer> {
 
     @Query("SELECT " +
             "COUNT(r) as count, " +
-            "AVG(r.pinchMaxD1) as avgPinchD1, " +
-            "AVG(r.pinchMaxD2) as avgPinchD2, " +
-            "AVG(r.pinchMaxD3) as avgPinchD3, " +
-            "AVG(r.pinchMaxD4) as avgPinchD4, " +
-            "AVG(r.pinchMaxE1) as avgPinchE1, " +
-            "AVG(r.pinchMaxE2) as avgPinchE2, " +
-            "AVG(r.pinchMaxE3) as avgPinchE3, " +
-            "AVG(r.pinchMaxE4) as avgPinchE4, " +
-            "MAX(r.pinchMaxD1) as maxPinchD1, " +
-            "MAX(r.pinchMaxD2) as maxPinchD2, " +
-            "MAX(r.pinchMaxD3) as maxPinchD3, " +
-            "MAX(r.pinchMaxD4) as maxPinchD4, " +
-            "MAX(r.pinchMaxE1) as maxPinchE1, " +
-            "MAX(r.pinchMaxE2) as maxPinchE2, " +
-            "MAX(r.pinchMaxE3) as maxPinchE3, " +
-            "MAX(r.pinchMaxE4) as maxPinchE4, " +
             "AVG(r.palmMaxD) as avgPalmD, " +
             "AVG(r.palmMaxE) as avgPalmE, " +
             "MAX(r.palmMaxD) as maxPalmD, " +

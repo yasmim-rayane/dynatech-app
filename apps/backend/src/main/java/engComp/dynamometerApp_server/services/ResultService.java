@@ -137,14 +137,6 @@ public class ResultService {
 
         consolidated.setPalmMaxD(calcAverage(todayResults, Result::getPalmMaxD));
         consolidated.setPalmMaxE(calcAverage(todayResults, Result::getPalmMaxE));
-        consolidated.setPinchMaxD1(calcAverage(todayResults, Result::getPinchMaxD1));
-        consolidated.setPinchMaxD2(calcAverage(todayResults, Result::getPinchMaxD2));
-        consolidated.setPinchMaxD3(calcAverage(todayResults, Result::getPinchMaxD3));
-        consolidated.setPinchMaxD4(calcAverage(todayResults, Result::getPinchMaxD4));
-        consolidated.setPinchMaxE1(calcAverage(todayResults, Result::getPinchMaxE1));
-        consolidated.setPinchMaxE2(calcAverage(todayResults, Result::getPinchMaxE2));
-        consolidated.setPinchMaxE3(calcAverage(todayResults, Result::getPinchMaxE3));
-        consolidated.setPinchMaxE4(calcAverage(todayResults, Result::getPinchMaxE4));
 
         // deleta todos os registros do dia
         resultRepository.deleteAll(todayResults);
@@ -190,14 +182,6 @@ public class ResultService {
 
         if (dto.getPalmMaxD() != null && dto.getPalmMaxD() > 0) result.setPalmMaxD(dto.getPalmMaxD());
         if (dto.getPalmMaxE() != null && dto.getPalmMaxE() > 0) result.setPalmMaxE(dto.getPalmMaxE());
-        if (dto.getPinchMaxD1() != null && dto.getPinchMaxD1() > 0) result.setPinchMaxD1(dto.getPinchMaxD1());
-        if (dto.getPinchMaxD2() != null && dto.getPinchMaxD2() > 0) result.setPinchMaxD2(dto.getPinchMaxD2());
-        if (dto.getPinchMaxD3() != null && dto.getPinchMaxD3() > 0) result.setPinchMaxD3(dto.getPinchMaxD3());
-        if (dto.getPinchMaxD4() != null && dto.getPinchMaxD4() > 0) result.setPinchMaxD4(dto.getPinchMaxD4());
-        if (dto.getPinchMaxE1() != null && dto.getPinchMaxE1() > 0) result.setPinchMaxE1(dto.getPinchMaxE1());
-        if (dto.getPinchMaxE2() != null && dto.getPinchMaxE2() > 0) result.setPinchMaxE2(dto.getPinchMaxE2());
-        if (dto.getPinchMaxE3() != null && dto.getPinchMaxE3() > 0) result.setPinchMaxE3(dto.getPinchMaxE3());
-        if (dto.getPinchMaxE4() != null && dto.getPinchMaxE4() > 0) result.setPinchMaxE4(dto.getPinchMaxE4());
 
         return new ResultResponseDTO(resultRepository.save(result));
     }
@@ -215,22 +199,6 @@ public class ResultService {
                 && (r.getPalmMaxD() != null && r.getPalmMaxD() > 0)) return false;
         if (dto.getPalmMaxE() != null && dto.getPalmMaxE() > 0
                 && (r.getPalmMaxE() != null && r.getPalmMaxE() > 0)) return false;
-        if (dto.getPinchMaxD1() != null && dto.getPinchMaxD1() > 0
-                && (r.getPinchMaxD1() != null && r.getPinchMaxD1() > 0)) return false;
-        if (dto.getPinchMaxD2() != null && dto.getPinchMaxD2() > 0
-                && (r.getPinchMaxD2() != null && r.getPinchMaxD2() > 0)) return false;
-        if (dto.getPinchMaxD3() != null && dto.getPinchMaxD3() > 0
-                && (r.getPinchMaxD3() != null && r.getPinchMaxD3() > 0)) return false;
-        if (dto.getPinchMaxD4() != null && dto.getPinchMaxD4() > 0
-                && (r.getPinchMaxD4() != null && r.getPinchMaxD4() > 0)) return false;
-        if (dto.getPinchMaxE1() != null && dto.getPinchMaxE1() > 0
-                && (r.getPinchMaxE1() != null && r.getPinchMaxE1() > 0)) return false;
-        if (dto.getPinchMaxE2() != null && dto.getPinchMaxE2() > 0
-                && (r.getPinchMaxE2() != null && r.getPinchMaxE2() > 0)) return false;
-        if (dto.getPinchMaxE3() != null && dto.getPinchMaxE3() > 0
-                && (r.getPinchMaxE3() != null && r.getPinchMaxE3() > 0)) return false;
-        if (dto.getPinchMaxE4() != null && dto.getPinchMaxE4() > 0
-                && (r.getPinchMaxE4() != null && r.getPinchMaxE4() > 0)) return false;
         return true;
     }
 }

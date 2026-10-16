@@ -2,7 +2,7 @@
 
 > **Status:** Work in Progress (WIP)
 
-Este é o repositório oficial do aplicativo DynaTech, um software mobile com foco em saúde e performance, projetado para se conectar a um dinamômetro digital via Bluetooth (BLE) e coletar medições de força de preensão palmar e pinça.
+Este é o repositório oficial do aplicativo DynaTech, um software mobile com foco em saúde e performance, projetado para se conectar a um dinamômetro digital via Bluetooth (BLE) e coletar medições de força de preensão palmar.
 
 Este projeto está sendo desenvolvido como parte da disciplina de **Tópicos de Engenharia Biomédica**, correspondente ao 3º semestre do curso de **Engenharia da Computação**.
 
