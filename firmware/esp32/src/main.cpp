@@ -6,27 +6,39 @@
 #include "HX711.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SH110X.h>
 
 // ==========================================
-// CONFIGURAÇÕES DO DISPLAY OLED
+// CONFIGURAÇÕES DO DISPLAY OLED (SH1106 128x64, I2C)
 // ==========================================
 #define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
+#define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define OLED_SDA 21
+#define OLED_SCL 22
+#define OLED_WHITE SH110X_WHITE
+Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// ==========================================
+// CONFIGURAÇÕES DOS LEDS
+// ==========================================
+#define LED1_PIN 18 // LED 1: status Bluetooth (pisca lento = aguardando pareamento, fixo = pareado)
+#define LED2_PIN 19 // LED 2: aceso fixo durante a medição
+const unsigned long LED1_BLINK_INTERVAL_MS = 1000; // Meio período do pisca lento (1s aceso / 1s apagado)
+unsigned long led1LastToggle = 0;
+bool led1BlinkState = false;
 
 // ==========================================
 // CONFIGURAÇÕES DE PINOS DO HX711
 // ==========================================
-const int HX711_DOUT = 17; // Pino de dados do HX711
+const int HX711_DOUT = 15; // Pino de dados (DT) do HX711
 const int HX711_SCK = 16;  // Pino de clock do HX711
 
 // ==========================================
 // CONFIGURAÇÕES DO BOTÃO FÍSICO
 // ==========================================
-#define BUTTON_PIN 4 // Pino para o botão de início da medição
+#define BUTTON_PIN 17 // Pino para o botão de início da medição
 
 HX711 scale;
 
@@ -49,12 +61,12 @@ BLEServer* pServer = NULL;
 BLECharacteristic* pCharResult = NULL;
 BLECharacteristic* pCharStatus = NULL;
 BLECharacteristic* pCharLive = NULL;
-bool deviceConnected = false;
+volatile bool deviceConnected = false;
 
 // ==========================================
 // VARIÁVEIS DE CONTROLE DA MEDIÇÃO
 // ==========================================
-bool isMeasuring = false;
+volatile bool isMeasuring = false;
 unsigned long measurementStartTime = 0;
 unsigned long lastLiveUpdate = 0;
 const unsigned long MEASUREMENT_DURATION_MS = 5000; // 5 segundos
@@ -70,15 +82,94 @@ int idleButtonState = LOW;
 int activeButtonState = HIGH;
 int lastButtonState = LOW;
 
-// Função auxiliar para atualizar o display no modo ocioso
+// Flags sinalizadas pelos callbacks BLE (que rodam em outra task do FreeRTOS).
+// O display e a balança só são acessados pelo loop(), evitando escrita I2C
+// concorrente (que também corrompe a imagem do display).
+volatile bool bleStartRequested = false;
+volatile bool idleRefreshRequested = false;
+
+// ==========================================
+// FUNÇÕES DE DISPLAY (layout para 128x64)
+// Fonte padrão: 6x8 px por caractere * textSize
+// ==========================================
+
+// Escreve um texto centralizado horizontalmente na linha y
+void drawCentered(const char* text, int16_t y, uint8_t size) {
+  int16_t x1, y1;
+  uint16_t w, h;
+  display.setTextSize(size);
+  display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  int16_t x = (SCREEN_WIDTH - (int16_t)w) / 2;
+  if (x < 0) x = 0;
+  display.setCursor(x, y);
+  display.print(text);
+}
+
+// Tela de espera
 void showIdleDisplay() {
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  display.println("Dynamometer");
-  display.println("Esperando medicao");
-  display.println("iniciar...");
+  drawCentered("DYNATECH", 0, 2);                      // y 0..15
+  display.drawFastHLine(0, 18, SCREEN_WIDTH, OLED_WHITE);
+  drawCentered("Pressione o botao", 24, 1);            // y 24..31
+  drawCentered("para medir", 34, 1);                   // y 34..41
+  display.drawFastHLine(0, 47, SCREEN_WIDTH, OLED_WHITE);
+  drawCentered(deviceConnected ? "BLE: Conectado" : "BLE: Aguardando", 54, 1); // y 54..61
   display.display();
+}
+
+// Exibe um título e um valor em kgf
+void showForceDisplay(const char* title, float value) {
+  char valueStr[12];
+  snprintf(valueStr, sizeof(valueStr), "%.1f", value);
+
+  display.clearDisplay();
+  drawCentered(title, 0, 2);                           // y 0..15
+  display.drawFastHLine(0, 18, SCREEN_WIDTH, OLED_WHITE);
+  drawCentered(valueStr, 23, 3);                       // y 23..46
+  drawCentered("kgf", 50, 1);                          // y 50..57
+  display.display();
+}
+
+// Atualiza os LEDs de status (não bloqueante, chamado a cada iteração do loop)
+void updateLeds() {
+  // LED 1: fixo quando pareado, piscando lento quando aguardando conexão
+  if (deviceConnected) {
+    digitalWrite(LED1_PIN, HIGH);
+    led1BlinkState = true;
+  } else {
+    unsigned long now = millis();
+    if (now - led1LastToggle >= LED1_BLINK_INTERVAL_MS) {
+      led1LastToggle = now;
+      led1BlinkState = !led1BlinkState;
+    }
+    digitalWrite(LED1_PIN, led1BlinkState ? HIGH : LOW);
+  }
+
+  // LED 2: aceso fixo enquanto houver medição em andamento
+  digitalWrite(LED2_PIN, isMeasuring ? HIGH : LOW);
+}
+
+// Inicia uma medição (chamada somente a partir do loop())
+void startMeasurement() {
+  isMeasuring = true;
+  maxForceDetected = 0.0;
+  showPeak = false; // Cancela a exibição do pico se iniciar uma nova medição
+
+  digitalWrite(LED2_PIN, HIGH);
+  showForceDisplay("FORCA", 0.0);
+
+  // Tara a balança no início da medição para ignorar peso da própria mão/aparelho
+  scale.tare();
+
+  // Conta os 5 segundos a partir do fim da tara
+  measurementStartTime = millis();
+  lastLiveUpdate = measurementStartTime;
+
+  // Notifica o app que a medição começou
+  if (deviceConnected && pCharStatus) {
+    pCharStatus->setValue("1"); // 1 = Medindo
+    pCharStatus->notify();
+  }
 }
 
 // ==========================================
@@ -88,20 +179,13 @@ class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
       Serial.println("App Conectado!");
-      
-      // Quando conecta, se não estiver medindo nem mostrando o pico, atualiza para Idle
-      if (!isMeasuring && !showPeak) {
-        showIdleDisplay();
-      }
+      idleRefreshRequested = true; // O loop() redesenha a tela de espera
     }
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
       Serial.println("App Desconectado. Reiniciando advertising...");
-      
-      if (!isMeasuring && !showPeak) {
-        showIdleDisplay();
-      }
+      idleRefreshRequested = true;
       
       // Permite que o app reconecte novamente
       BLEDevice::startAdvertising();
@@ -110,35 +194,13 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class StartMeasurementCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      String rxValue = pCharacteristic->getValue();
+      // 'auto' para compatibilidade: core 2.x retorna std::string, core 3.x retorna String
+      auto rxValue = pCharacteristic->getValue();
 
-      if (rxValue.length() > 0) {
-        // Se receber o comando "1" e não estiver medindo, inicia o teste
-        if (rxValue[0] == '1' && !isMeasuring) {
-          Serial.println("Comando de inicio recebido!");
-          isMeasuring = true;
-          maxForceDetected = 0.0;
-          measurementStartTime = millis();
-          lastLiveUpdate = millis();
-          showPeak = false; // Cancela a exibição do pico se iniciar uma nova medição
-          
-          display.clearDisplay();
-          display.setTextSize(2);
-          display.setCursor(0, 0);
-          display.print("Forca:");
-          display.setCursor(0, 16);
-          display.print("0.0 kgf");
-          display.display();
-          
-          // Tara a balança no início da medição para ignorar peso da própria mão/aparelho
-          scale.tare();
-          
-          // Notifica o app que a medição começou
-          if (pCharStatus) {
-            pCharStatus->setValue("1"); // 1 = Medindo
-            pCharStatus->notify();
-          }
-        }
+      // Se receber o comando "1", pede ao loop() para iniciar o teste
+      if (rxValue.length() > 0 && rxValue[0] == '1' && !isMeasuring) {
+        Serial.println("Comando de inicio recebido!");
+        bleStartRequested = true;
       }
     }
 };
@@ -152,6 +214,12 @@ void setup() {
 
   // Configura o pino do botão usando o resistor interno de pull-down
   pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
+  // Configura os LEDs de status
+  pinMode(LED1_PIN, OUTPUT);
+  pinMode(LED2_PIN, OUTPUT);
+  digitalWrite(LED1_PIN, LOW);
+  digitalWrite(LED2_PIN, LOW);
   
   // Pequeno delay para estabilizar o pino
   delay(100);
@@ -163,12 +231,17 @@ void setup() {
   activeButtonState = (idleButtonState == HIGH) ? LOW : HIGH;
   lastButtonState = idleButtonState;
 
-  // Inicializa Display OLED (SDA=22, SCL=21)
-  Wire.begin(22, 21);
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
+  // Inicializa Display OLED 128x64 (SDA=21, SCL=22)
+  delay(250); // Tempo para o OLED estabilizar a alimentação antes da inicialização
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if (!display.begin(SCREEN_ADDRESS, true)) {
+    Serial.println(F("Falha ao inicializar o display OLED"));
   } else {
-    display.setTextColor(SSD1306_WHITE);
+    display.clearDisplay();   // Limpa o buffer (remove o logo da Adafruit)
+    display.display();        // Limpa a RAM do display (remove o "chuvisco" inicial)
+    display.setTextColor(OLED_WHITE);
+    display.setTextWrap(false);
+    display.cp437(true);
     showIdleDisplay();
   }
 
@@ -239,34 +312,28 @@ void setup() {
 void loop() {
   int currentButtonState = digitalRead(BUTTON_PIN);
 
+  // === COMANDO DE INÍCIO VIA BLE ===
+  if (bleStartRequested) {
+    bleStartRequested = false;
+    if (!isMeasuring) {
+      startMeasurement();
+    }
+  }
+
   // === CHECAGEM DO BOTÃO FÍSICO (Edge Trigger Auto-Adaptativo) ===
   // Só inicia se o botão ACABOU de ser pressionado (mudou do estado ocioso para o ativo)
   if (currentButtonState == activeButtonState && lastButtonState == idleButtonState && !isMeasuring) {
     Serial.println("Medicao iniciada pelo botao fisico!");
-    isMeasuring = true;
-    maxForceDetected = 0.0;
-    measurementStartTime = millis();
-    lastLiveUpdate = millis();
-    showPeak = false; // Cancela a exibição do pico se iniciar uma nova medição
-    
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setCursor(0, 0);
-    display.print("Forca:");
-    display.setCursor(0, 16);
-    display.print("0.0 kgf");
-    display.display();
-    
-    // Tara a balança no início da medição
-    scale.tare();
-    
-    // Se o app estiver conectado, avisa que começou a medir
-    if (deviceConnected && pCharStatus) {
-      pCharStatus->setValue("1");
-      pCharStatus->notify();
-    }
-    
+    startMeasurement();
     delay(200); // Debounce simples para o botão
+  }
+
+  // === ATUALIZAÇÃO DA TELA DE ESPERA (conexão/desconexão BLE) ===
+  if (idleRefreshRequested) {
+    idleRefreshRequested = false;
+    if (!isMeasuring && !showPeak) {
+      showIdleDisplay();
+    }
   }
 
   // === LÓGICA DE MEDIÇÃO ===
@@ -304,14 +371,7 @@ void loop() {
           }
 
           // Atualiza o Display
-          display.clearDisplay();
-          display.setTextSize(2);
-          display.setCursor(0, 0);
-          display.print("Forca:");
-          display.setCursor(0, 16);
-          display.print(currentForce, 1);
-          display.print(" kgf");
-          display.display();
+          showForceDisplay("FORCA", currentForce);
         }
 
         // Print opcional para debug na serial
@@ -339,14 +399,7 @@ void loop() {
       // Exibe o pico no display por 10 segundos
       showPeak = true;
       peakDisplayStartTime = millis();
-      display.clearDisplay();
-      display.setTextSize(2);
-      display.setCursor(0, 0);
-      display.print("PICO MAX:");
-      display.setCursor(0, 16);
-      display.print(maxForceDetected, 1);
-      display.print(" kgf");
-      display.display();
+      showForceDisplay("PICO MAX", maxForceDetected);
     }
   }
 
@@ -357,6 +410,9 @@ void loop() {
       showIdleDisplay();
     }
   }
+
+  // Atualiza os LEDs de status (Bluetooth e medição)
+  updateLeds();
 
   // Salva o estado atual do botão para a próxima iteração do loop
   lastButtonState = currentButtonState;
