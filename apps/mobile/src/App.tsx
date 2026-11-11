@@ -186,6 +186,8 @@ function Shell() {
     content = <TutorialScreen onComplete={() => setSub(null)} onBack={() => setSub(null)} />;
   } else if (sub === "pairing") {
     content = <PairingScreen onConnect={() => setSub(null)} onBack={() => setSub(null)} />;
+  } else if (sub === "patient-benefits") {
+    content = <PatientBenefitsScreen onContinue={() => setSub(null)} onBack={() => setSub(null)} />;
   } else if (sub === "measure") {
     content = <MeasurementScreen onBack={() => setSub(null)} />;
   } else {
@@ -212,7 +214,7 @@ function Shell() {
             }}
             onOpenAccount={() => setSub("account")}
             onOpenGeneral={() => setSub("general")}
-            onOpenTutorial={() => setSub("tutorial")}
+            onOpenTutorial={() => setSub("patient-benefits")}
           />
         );
       }

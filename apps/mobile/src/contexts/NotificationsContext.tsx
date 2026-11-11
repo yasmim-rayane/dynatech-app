@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
-export type NotificationTone = "emerald" | "cyan" | "navy";
+export type NotificationTone = "emerald" | "cyan" | "navy" | "danger";
 export type NotificationIcon = "award" | "clock" | "trending-up" | "bluetooth" | "bell";
 
 export interface AppNotification {

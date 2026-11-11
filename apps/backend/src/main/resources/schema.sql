@@ -19,14 +19,6 @@ CREATE TABLE IF NOT EXISTS `results` (
   `userId` INT NOT NULL,
   `palmMaxD` DECIMAL(5,2) NULL,
   `palmMaxE` DECIMAL(5,2) NULL,
-  `pinchMaxD1` DECIMAL(5,2) NULL,
-  `pinchMaxD2` DECIMAL(5,2) NULL,
-  `pinchMaxD3` DECIMAL(5,2) NULL,
-  `pinchMaxD4` DECIMAL(5,2) NULL,
-  `pinchMaxE1` DECIMAL(5,2) NULL,
-  `pinchMaxE2` DECIMAL(5,2) NULL,
-  `pinchMaxE3` DECIMAL(5,2) NULL,
-  `pinchMaxE4` DECIMAL(5,2) NULL,
   `examDate` DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
   CONSTRAINT `fk_users_results`
     FOREIGN KEY (`userId`)

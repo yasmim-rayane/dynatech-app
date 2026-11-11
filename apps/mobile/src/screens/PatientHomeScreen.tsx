@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Hand, Zap, Bell, TrendingUp, ShieldCheck, Activity, Info, X } from "lucide-react";
+import { Hand, Bell, TrendingUp, ShieldCheck, Activity, Info, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppNotifications } from "../contexts/NotificationsContext";
 import * as api from "../services/api";
@@ -82,12 +82,6 @@ export function PatientHomeScreen({
   // Dados da última medição
   const palmD = lastResult?.palmMaxD;
   const palmE = lastResult?.palmMaxE;
-  const pinchD = [
-    { finger: "Indicador", value: lastResult?.pinchMaxD1 },
-    { finger: "Médio", value: lastResult?.pinchMaxD2 },
-    { finger: "Anelar", value: lastResult?.pinchMaxD3 },
-    { finger: "Mínimo", value: lastResult?.pinchMaxD4 },
-  ];
 
   // Calcula evolução (comparação com penúltima medição)
   const prevResult = allResults.length > 1 ? allResults[1] : null;
@@ -253,83 +247,6 @@ export function PatientHomeScreen({
           />
         </div>
 
-        {/* Pinça — por dedo */}
-        <div
-          className="rounded-2xl p-4 shadow-md animate-fadeSlideUp"
-          style={{
-            background: "var(--brand-card)",
-            border: "1px solid var(--brand-border-soft)",
-            animationDelay: "0.2s",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ background: "var(--brand-cyan-soft)" }}
-            >
-              <Zap size={20} style={{ color: "var(--brand-cyan)" }} />
-            </div>
-            <div>
-              <div
-                style={{
-                  color: "var(--brand-text-faint)",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  letterSpacing: "0.04em",
-                }}
-              >
-                ÚLTIMA MEDIÇÃO
-              </div>
-              <div
-                style={{
-                  color: "var(--brand-text)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                }}
-              >
-                Força de Pinça
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {pinchD.map((f) => (
-              <div
-                key={f.finger}
-                className="rounded-xl p-3.5"
-                style={{ background: "var(--brand-chip-bg)" }}
-              >
-                <div
-                  style={{
-                    color: "var(--brand-text-muted)",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  }}
-                >
-                  {f.finger}
-                </div>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span
-                    style={{
-                      color: "var(--brand-text)",
-                      fontSize: 22,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {f.value != null ? f.value.toFixed(1) : "--"}
-                  </span>
-                  <span
-                    style={{
-                      color: "var(--brand-text-muted)",
-                      fontSize: 11,
-                    }}
-                  >
-                    kgf
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Resumo de evolução */}
         <div

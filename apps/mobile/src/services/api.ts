@@ -99,14 +99,6 @@ export interface ResultResponse {
   id: number;
   palmMaxD: number | null;
   palmMaxE: number | null;
-  pinchMaxD1: number | null;
-  pinchMaxD2: number | null;
-  pinchMaxD3: number | null;
-  pinchMaxD4: number | null;
-  pinchMaxE1: number | null;
-  pinchMaxE2: number | null;
-  pinchMaxE3: number | null;
-  pinchMaxE4: number | null;
   examDate: string;         // ISO datetime
 }
 
@@ -115,14 +107,6 @@ export interface ResultCreatePayload {
   email: string;
   palmMaxD?: number | null;
   palmMaxE?: number | null;
-  pinchMaxD1?: number | null;
-  pinchMaxD2?: number | null;
-  pinchMaxD3?: number | null;
-  pinchMaxD4?: number | null;
-  pinchMaxE1?: number | null;
-  pinchMaxE2?: number | null;
-  pinchMaxE3?: number | null;
-  pinchMaxE4?: number | null;
 }
 
 /** Resposta do GET /api/result/weeklyStats */
@@ -132,24 +116,8 @@ export interface WeeklyStatsResponse {
   count: number;
   avgPalmD: number | null;
   avgPalmE: number | null;
-  avgPinchD1: number | null;
-  avgPinchD2: number | null;
-  avgPinchD3: number | null;
-  avgPinchD4: number | null;
-  avgPinchE1: number | null;
-  avgPinchE2: number | null;
-  avgPinchE3: number | null;
-  avgPinchE4: number | null;
   maxPalmD: number | null;
   maxPalmE: number | null;
-  maxPinchD1: number | null;
-  maxPinchD2: number | null;
-  maxPinchD3: number | null;
-  maxPinchD4: number | null;
-  maxPinchE1: number | null;
-  maxPinchE2: number | null;
-  maxPinchE3: number | null;
-  maxPinchE4: number | null;
 }
 
 /** Resposta do GET /api/result/monthlyStats */

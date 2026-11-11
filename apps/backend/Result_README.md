@@ -16,39 +16,23 @@
 
 
 
-\[
+[
 
-&#x20;   {
+    {
 
-&#x20;       "examDate": "2026-05-13T01:15:48",
+        "examDate": "2026-05-13T01:15:48",
 
-&#x20;       "id": 6,
+        "id": 6,
 
-&#x20;       "palmMaxD": 22.1,
+        "palmMaxD": 22.1,
 
-&#x20;       "palmMaxE": 58.9,
+        "palmMaxE": 58.9
 
-&#x20;       "pinchMaxD1": 8.7,
+    },
 
-&#x20;       "pinchMaxD2": 9.3,
+ 
 
-&#x20;       "pinchMaxD3": 7.6,
-
-&#x20;       "pinchMaxD4": 5.4,
-
-&#x20;       "pinchMaxE1": 6.8,
-
-&#x20;       "pinchMaxE2": 8.2,
-
-&#x20;       "pinchMaxE3": 9.6,
-
-&#x20;       "pinchMaxE4": 7.0
-
-&#x20;   },
-
-&#x20;
-
-&#x20;   ...
+    ...
 
 ]
 
@@ -60,39 +44,23 @@
 
 
 
-\[
+[
 
-&#x20;   {
+    {
 
-&#x20;       "examDate": "2026-05-13T01:15:48",
+        "examDate": "2026-05-13T01:15:48",
 
-&#x20;       "id": 6,
+        "id": 6,
 
-&#x20;       "palmMaxD": 22.1,
+        "palmMaxD": 22.1,
 
-&#x20;       "palmMaxE": 58.9,
+        "palmMaxE": 58.9
 
-&#x20;       "pinchMaxD1": 8.7,
+    },
 
-&#x20;       "pinchMaxD2": 9.3,
+ 
 
-&#x20;       "pinchMaxD3": 7.6,
-
-&#x20;       "pinchMaxD4": 5.4,
-
-&#x20;       "pinchMaxE1": 6.8,
-
-&#x20;       "pinchMaxE2": 8.2,
-
-&#x20;       "pinchMaxE3": 9.6,
-
-&#x20;       "pinchMaxE4": 7.0
-
-&#x20;   },
-
-&#x20;
-
-&#x20;   ...
+    ...
 
 ]
 
@@ -104,67 +72,35 @@
 
 
 
-Ex de Request com os parâmetros: /api/result/getDateRange?email=mm@test3.com\&d1=2026-03-13T10:00:00\&d2=2026-05-13T01:07:27
+Ex de Request com os parâmetros: /api/result/getDateRange?email=mm@test3.com&d1=2026-03-13T10:00:00&d2=2026-05-13T01:07:27
 
 
 
-\[
+[
 
-&#x20;   {
+    {
 
-&#x20;       "examDate": "2026-05-13T01:07:27",
+        "examDate": "2026-05-13T01:07:27",
 
-&#x20;       "id": 1,
+        "id": 1,
 
-&#x20;       "palmMaxD": 50.0,
+        "palmMaxD": 50.0,
 
-&#x20;       "palmMaxE": 45.0,
+        "palmMaxE": 45.0
 
-&#x20;       "pinchMaxD1": null,
+    },
 
-&#x20;       "pinchMaxD2": null,
+    {
 
-&#x20;       "pinchMaxD3": null,
+        "examDate": "2026-04-13T10:00:00",
 
-&#x20;       "pinchMaxD4": null,
+        "id": 2,
 
-&#x20;       "pinchMaxE1": null,
+        "palmMaxD": 30.0,
 
-&#x20;       "pinchMaxE2": null,
+        "palmMaxE": 44.4
 
-&#x20;       "pinchMaxE3": null,
-
-&#x20;       "pinchMaxE4": null
-
-&#x20;   },
-
-&#x20;   {
-
-&#x20;       "examDate": "2026-04-13T10:00:00",
-
-&#x20;       "id": 2,
-
-&#x20;       "palmMaxD": 30.0,
-
-&#x20;       "palmMaxE": 44.4,
-
-&#x20;       "pinchMaxD1": 8.0,
-
-&#x20;       "pinchMaxD2": 10.2,
-
-&#x20;       "pinchMaxD3": 10.0,
-
-&#x20;       "pinchMaxD4": 7.2,
-
-&#x20;       "pinchMaxE1": 9.2,
-
-&#x20;       "pinchMaxE2": 9.4,
-
-&#x20;       "pinchMaxE3": 8.8,
-
-&#x20;       "pinchMaxE4": 9.3
-
-&#x20;   }
+    }
 
 ]
 
@@ -178,107 +114,43 @@ Ex de Request com os parâmetros: /api/result/getDateRange?email=mm@test3.com\&d
 
 
 
-\[
+[
 
-&#x20;   {
+    {
 
-&#x20;       "weekStart": "2026-05-11",
+        "weekStart": "2026-05-11",
 
-&#x20;       "weekEnd": "2026-05-17",
+        "weekEnd": "2026-05-17",
 
-&#x20;       "avgPalmD": 40.3,
+        "avgPalmD": 40.3,
 
-&#x20;       "avgPalmE": 42.8,
+        "avgPalmE": 42.8,
 
-&#x20;       "avgPinchD1": 8.433333,
+        "count": 4,
 
-&#x20;       "avgPinchD2": 7.733333,
+        "maxPalmD": 55.3,
 
-&#x20;       "avgPinchD3": 7.633333,
+        "maxPalmE": 58.9
 
-&#x20;       "avgPinchD4": 6.533333,
+    },
 
-&#x20;       "avgPinchE1": 7.033333,
+    {
 
-&#x20;       "avgPinchE2": 8.466667,
+        "weekStart": "2026-04-13",
 
-&#x20;       "avgPinchE3": 6.966667,
+        "weekEnd": "2026-04-19",
 
-&#x20;       "avgPinchE4": 7.966667,
+        "avgPalmD": 30.0,
 
-&#x20;       "count": 4,
+        "avgPalmE": 44.4,
 
-&#x20;       "maxPalmD": 55.3,
+        "count": 1,
 
-&#x20;       "maxPalmE": 58.9,
+        "maxPalmD": 30.0,
 
-&#x20;       "maxPinchD1": 9.5,
+        "maxPalmE": 44.4
 
-&#x20;       "maxPinchD2": 9.3,
-
-&#x20;       "maxPinchD3": 8.9,
-
-&#x20;       "maxPinchD4": 7.7,
-
-&#x20;       "maxPinchE1": 9.0,
-
-&#x20;       "maxPinchE2": 9.8,
-
-&#x20;       "maxPinchE3": 9.6,
-
-&#x20;       "maxPinchE4": 8.6
-
-&#x20;   },
-
-&#x20;   {
-
-&#x20;       "weekStart": "2026-04-13",
-
-&#x20;       "weekEnd": "2026-04-19",
-
-&#x20;       "avgPalmD": 30.0,
-
-&#x20;       "avgPalmE": 44.4,
-
-&#x20;       "avgPinchD1": 8.0,
-
-&#x20;       "avgPinchD2": 10.2,
-
-&#x20;       "avgPinchD3": 10.0,
-
-&#x20;       "avgPinchD4": 7.2,
-
-&#x20;       "avgPinchE1": 9.2,
-
-&#x20;       "avgPinchE2": 9.4,
-
-&#x20;       "avgPinchE3": 8.8,
-
-&#x20;       "avgPinchE4": 9.3,
-
-&#x20;       "count": 1,
-
-&#x20;       "maxPalmD": 30.0,
-
-&#x20;       "maxPalmE": 44.4,
-
-&#x20;       "maxPinchD1": 8.0,
-
-&#x20;       "maxPinchD2": 10.2,
-
-&#x20;       "maxPinchD3": 10.0,
-
-&#x20;       "maxPinchD4": 7.2,
-
-&#x20;       "maxPinchE1": 9.2,
-
-&#x20;       "maxPinchE2": 9.4,
-
-&#x20;       "maxPinchE3": 8.8,
-
-&#x20;       "maxPinchE4": 9.3
-
-&#x20;   }
+    }
 
 ]
 
@@ -290,107 +162,43 @@ Ex de Request com os parâmetros: /api/result/getDateRange?email=mm@test3.com\&d
 
 
 
-\[
+[
 
-&#x20;   {
+    {
 
-&#x20;       "avgPalmD": 40.3,
+        "avgPalmD": 40.3,
 
-&#x20;       "avgPalmE": 42.8,
+        "avgPalmE": 42.8,
 
-&#x20;       "avgPinchD1": 8.433333,
+        "count": 4,
 
-&#x20;       "avgPinchD2": 7.733333,
+        "maxPalmD": 55.3,
 
-&#x20;       "avgPinchD3": 7.633333,
+        "maxPalmE": 58.9,
 
-&#x20;       "avgPinchD4": 6.533333,
+        "month": 5,
 
-&#x20;       "avgPinchE1": 7.033333,
+        "year": 2026
 
-&#x20;       "avgPinchE2": 8.466667,
+    },
 
-&#x20;       "avgPinchE3": 6.966667,
+    {
 
-&#x20;       "avgPinchE4": 7.966667,
+        "avgPalmD": 30.0,
 
-&#x20;       "count": 4,
+        "avgPalmE": 44.4,
 
-&#x20;       "maxPalmD": 55.3,
+        "count": 1,
 
-&#x20;       "maxPalmE": 58.9,
+        "maxPalmD": 30.0,
 
-&#x20;       "maxPinchD1": 9.5,
+        "maxPalmE": 44.4,
 
-&#x20;       "maxPinchD2": 9.3,
+        "month": 4,
 
-&#x20;       "maxPinchD3": 8.9,
+        "year": 2026
 
-&#x20;       "maxPinchD4": 7.7,
-
-&#x20;       "maxPinchE1": 9.0,
-
-&#x20;       "maxPinchE2": 9.8,
-
-&#x20;       "maxPinchE3": 9.6,
-
-&#x20;       "maxPinchE4": 8.6,
-
-&#x20;       "month": 5,
-
-&#x20;       "year": 2026
-
-&#x20;   },
-
-&#x20;   {
-
-&#x20;       "avgPalmD": 30.0,
-
-&#x20;       "avgPalmE": 44.4,
-
-&#x20;       "avgPinchD1": 8.0,
-
-&#x20;       "avgPinchD2": 10.2,
-
-&#x20;       "avgPinchD3": 10.0,
-
-&#x20;       "avgPinchD4": 7.2,
-
-&#x20;       "avgPinchE1": 9.2,
-
-&#x20;       "avgPinchE2": 9.4,
-
-&#x20;       "avgPinchE3": 8.8,
-
-&#x20;       "avgPinchE4": 9.3,
-
-&#x20;       "count": 1,
-
-&#x20;       "maxPalmD": 30.0,
-
-&#x20;       "maxPalmE": 44.4,
-
-&#x20;       "maxPinchD1": 8.0,
-
-&#x20;       "maxPinchD2": 10.2,
-
-&#x20;       "maxPinchD3": 10.0,
-
-&#x20;       "maxPinchD4": 7.2,
-
-&#x20;       "maxPinchE1": 9.2,
-
-&#x20;       "maxPinchE2": 9.4,
-
-&#x20;       "maxPinchE3": 8.8,
-
-&#x20;       "maxPinchE4": 9.3,
-
-&#x20;       "month": 4,
-
-&#x20;       "year": 2026
-
-&#x20;   }
+    }
 
 ]
 
@@ -404,11 +212,11 @@ Ex do JSON enviado para a request:
 
 {
 
-&#x20;   "email":"mm@test4.com",
+    "email":"mm@test4.com",
 
-&#x20;   "palmMaxD": 52.1,
+    "palmMaxD": 52.1,
 
-&#x20;   "palmMaxE": 43.56
+    "palmMaxE": 43.56
 
 }
 
@@ -421,29 +229,13 @@ Retorno obtido:
 
 {
 
-&#x20;   "examDate": "2026-05-13T23:48:41.3435699",
+    "examDate": "2026-05-13T23:48:41.3435699",
 
-&#x20;   "id": 7,
+    "id": 7,
 
-&#x20;   "palmMaxD": 52.1,
+    "palmMaxD": 52.1,
 
-&#x20;   "palmMaxE": 43.56,
-
-&#x20;   "pinchMaxD1": null,
-
-&#x20;   "pinchMaxD2": null,
-
-&#x20;   "pinchMaxD3": null,
-
-&#x20;   "pinchMaxD4": null,
-
-&#x20;   "pinchMaxE1": null,
-
-&#x20;   "pinchMaxE2": null,
-
-&#x20;   "pinchMaxE3": null,
-
-&#x20;   "pinchMaxE4": null
+    "palmMaxE": 43.56
 
 }
 
@@ -459,7 +251,7 @@ void -> retorna um Http status OK - 200 caso sucesso
 
 
 
-\-----------------------------------
+-----------------------------------
 
 
 
@@ -473,29 +265,12 @@ Resposta: é retornado o JSON do registro com as medidas médias
 
 {
 
-&#x20;   "examDate": "2026-05-31T19:27:20.383309568",
+    "examDate": "2026-05-31T19:27:20.383309568",
 
-&#x20;   "id": 9,
+    "id": 9,
 
-&#x20;   "palmMaxD": 50.866666666666674,
+    "palmMaxD": 50.866666666666674,
 
-&#x20;   "palmMaxE": 71.6,
-
-&#x20;   "pinchMaxD1": null,
-
-&#x20;   "pinchMaxD2": null,
-
-&#x20;   "pinchMaxD3": null,
-
-&#x20;   "pinchMaxD4": null,
-
-&#x20;   "pinchMaxE1": null,
-
-&#x20;   "pinchMaxE2": null,
-
-&#x20;   "pinchMaxE3": null,
-
-&#x20;   "pinchMaxE4": null
+    "palmMaxE": 71.6
 
 }
-

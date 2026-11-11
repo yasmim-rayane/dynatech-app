@@ -17,6 +17,7 @@ export function NotificationsScreen({ onBack }: { onBack: () => void }) {
     emerald: { bg: "var(--brand-emerald-soft)", fg: "var(--brand-emerald)" },
     cyan: { bg: "var(--brand-chip-bg)", fg: "var(--brand-cyan)" },
     navy: { bg: "var(--brand-chip-bg)", fg: "var(--brand-text)" },
+    danger: { bg: "var(--brand-danger-soft, rgba(239,68,68,0.1))", fg: "var(--brand-danger, #ef4444)" },
   };
 
   const IconMap: Record<NotificationIcon, React.ElementType> = {
@@ -128,7 +129,7 @@ export function NotificationsScreen({ onBack }: { onBack: () => void }) {
               </div>
               <div className="space-y-2">
                 {g.items.map((it, i) => {
-                  const tone = toneMap[it.tone];
+                  const tone = toneMap[it.tone] || toneMap.navy;
                   const IconComp = IconMap[it.icon] || Bell;
                   return (
                     <div

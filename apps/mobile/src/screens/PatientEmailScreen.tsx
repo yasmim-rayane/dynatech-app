@@ -181,10 +181,11 @@ export function PatientEmailScreen({
 
               {/* Sheet */}
               <div
-                className="relative w-full sm:w-[400px] max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 pb-8 animate-slideUp sm:animate-scaleIn"
+                className="relative w-full sm:w-[400px] max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp sm:animate-scaleIn"
                 style={{
                   background: "var(--brand-card)",
                   border: "1px solid var(--brand-border-soft)",
+                  paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 24px))"
                 }}
               >
                 <button

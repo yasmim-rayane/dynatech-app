@@ -272,7 +272,10 @@ export function GeneralSettingsScreen({
                 <X size={18} style={{ color: "var(--brand-text)" }} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto space-y-8 no-scrollbar">
+            <div 
+              className="px-6 pt-6 overflow-y-auto space-y-8 no-scrollbar"
+              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 24px))" }}
+            >
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <span style={{ color: "var(--brand-emerald)", fontSize: 17, fontWeight: 700 }}>v1.0.0</span>
@@ -281,7 +284,6 @@ export function GeneralSettingsScreen({
                 <ul className="space-y-2" style={{ color: "var(--brand-text-muted)", fontSize: 14, lineHeight: "1.5" }}>
                   <li>• Lançamento oficial da versão Release Candidate.</li>
                   <li>• Pareamento Bluetooth e conexão nativa aprimorados.</li>
-                  <li>• Notificações locais integradas com o sistema de lembretes.</li>
                   <li>• Feedback tátil (Haptics) e áudio dinâmico durante medições.</li>
                 </ul>
               </div>
